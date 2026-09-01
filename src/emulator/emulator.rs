@@ -1,10 +1,5 @@
 use std::sync::Mutex;
 
-const DISPLAY_WIDTH: usize = 32;
-const DISPLAY_HEIGHT: usize = 64;
-const MEM_SIZE: usize = 2 << 11;
-const VARIABLE_AMOUNT: usize = 16;
-
 #[derive(Debug)]
 pub struct Emulator {
     memory: [u8; MEM_SIZE],
@@ -18,8 +13,8 @@ pub struct Emulator {
 }
 
 impl Emulator {
-    pub fn new() -> Emulator {
-        Emulator {
+    pub fn new() -> Self {
+        Self {
             memory: [0; MEM_SIZE],
             display: [[false; DISPLAY_HEIGHT]; DISPLAY_WIDTH],
             program_counter: 0,
@@ -31,3 +26,8 @@ impl Emulator {
         }
     }
 }
+
+const DISPLAY_WIDTH: usize = 32;
+const DISPLAY_HEIGHT: usize = 64;
+const MEM_SIZE: usize = 2 << 11;
+const VARIABLE_AMOUNT: usize = 16;
