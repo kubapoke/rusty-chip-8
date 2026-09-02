@@ -57,17 +57,14 @@ pub fn fill_from_display(
     resize(surface, surface_size);
 
     let mut buffer = surface.buffer_mut().expect("Failed to get the softbuffer buffer");
-
-    let mut counter: u32 = 0;
     let buffer_dims = (buffer.width().get(), buffer.height().get());
     let display_dims = DISPLAY_DIMS;
 
-    for pixel in buffer.iter_mut() {
-        let buffer_coords = (counter % buffer_dims.0, counter / buffer_dims.0);
+    for (i, pixel) in buffer.iter_mut().enumerate() {
+        let i = i as u32;
+        let buffer_coords = (i % buffer_dims.0, i / buffer_dims.0);
         let coords = map_coordinates(display_dims, buffer_dims, buffer_coords);
         *pixel = determine_pixel_color(*display.get(coords.1 as usize).expect("Failed to get display value") & (1 << (coords.0)));
-
-        counter += 1;
     }
 
     buffer.present().expect("Failed to present the softbuffer buffer");

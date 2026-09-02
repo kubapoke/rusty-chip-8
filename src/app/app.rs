@@ -5,7 +5,7 @@ use winit::event::{WindowEvent};
 use winit::event_loop::{ActiveEventLoop, OwnedDisplayHandle};
 use winit::window::{Window, WindowAttributes, WindowId};
 use log::info;
-use winit::dpi::{LogicalSize, Size};
+use winit::dpi::LogicalSize;
 use crate::app::utils::{fill_from_display, resize};
 
 #[derive(Debug)]
@@ -23,6 +23,12 @@ impl App {
     }
 }
 
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ApplicationHandler for App {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         let window_attributes = WindowAttributes::default()
@@ -37,7 +43,7 @@ impl ApplicationHandler for App {
         self.surface = Some(surface);
     }
 
-    fn window_event(&mut self, event_loop: &dyn ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
+    fn window_event(&mut self, event_loop: &dyn ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
         info!("{event:?}");
         match event {
             WindowEvent::CloseRequested => {

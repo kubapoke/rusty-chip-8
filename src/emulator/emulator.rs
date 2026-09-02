@@ -31,5 +31,11 @@ impl Emulator {
     }
 }
 
+impl Default for Emulator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 const MEM_SIZE: usize = 2 << 11;
 const VARIABLE_AMOUNT: usize = 16;
