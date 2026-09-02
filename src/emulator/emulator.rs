@@ -1,6 +1,7 @@
 use std::fs;
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -40,10 +41,10 @@ impl Emulator {
     }
 
     fn load_program_into_memory(&mut self, buffer: Vec<u8>) {
-        self.memory[200..(200+buffer.len())].clone_from_slice(buffer.as_slice());
+        self.memory[200..(200 + buffer.len())].clone_from_slice(buffer.as_slice());
     }
 
-    pub fn load_program(&mut self, filename: &String) {
+    pub fn load_program(&mut self, filename: &Path) {
         let mut f = File::open(&filename).expect("No file found");
         let metadata = fs::metadata(&filename).expect("Unable to read metadata");
         let mut buffer = vec![0; metadata.len() as usize];

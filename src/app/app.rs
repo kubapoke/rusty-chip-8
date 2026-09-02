@@ -2,6 +2,7 @@ use crate::app::utils::{fill_from_display, resize};
 use crate::emulator::Emulator;
 use log::info;
 use softbuffer::{Context, Surface};
+use std::path::Path;
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
 use winit::event::WindowEvent;
@@ -16,8 +17,11 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
+        let mut emulator = Emulator::new();
+        emulator.load_program(&Path::new("./programs/IBM Logo.ch8")); // TODO: Add proper program loading
+
         Self {
-            emulator: Emulator::new(),
+            emulator,
             surface: None,
         }
     }
