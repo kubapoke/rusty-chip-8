@@ -1,3 +1,6 @@
+use std::fs;
+use std::fs::File;
+use std::io::Read;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -34,6 +37,18 @@ impl Emulator {
             variables: [0; VARIABLE_AMOUNT],
         }
             .with_font_in_memory()
+    }
+
+    fn load_program_into_memory(&mut self, buffer: Vec<u8>) {
+        self.memory[200..(200+buffer.len())].clone_from_slice(buffer.as_slice());
+    }
+
+    pub fn load_program(&mut self, filename: &String) {
+        let mut f = File::open(&filename).expect("No file found");
+        let metadata = fs::metadata(&filename).expect("Unable to read metadata");
+        let mut buffer = vec![0; metadata.len() as usize];
+        f.read(&mut buffer).expect("Buffer overflow");
+        self.load_program_into_memory(buffer);
     }
 
     pub fn get_display(&self) -> &[u32; 16] {
