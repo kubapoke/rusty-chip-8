@@ -3,7 +3,7 @@ use std::sync::Mutex;
 #[derive(Debug)]
 pub struct Emulator {
     memory: [u8; MEM_SIZE],
-    display: [[bool; DISPLAY_HEIGHT]; DISPLAY_WIDTH],
+    display: [u32; 16],
     program_counter: u16,
     index: u16,
     stack: Vec<u16>,
@@ -16,7 +16,7 @@ impl Emulator {
     pub fn new() -> Self {
         Self {
             memory: [0; MEM_SIZE],
-            display: [[false; DISPLAY_HEIGHT]; DISPLAY_WIDTH],
+            display: [0; 16],
             program_counter: 0,
             index: 0,
             stack: vec![],
@@ -27,7 +27,5 @@ impl Emulator {
     }
 }
 
-const DISPLAY_WIDTH: usize = 32;
-const DISPLAY_HEIGHT: usize = 64;
 const MEM_SIZE: usize = 2 << 11;
 const VARIABLE_AMOUNT: usize = 16;
