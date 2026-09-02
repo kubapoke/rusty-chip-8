@@ -25,6 +25,10 @@ impl Emulator {
             variables: [0; VARIABLE_AMOUNT],
         }
     }
+    
+    pub fn display(&self) -> &[u32; 16] {
+        &self.display
+    }
 }
 
 const MEM_SIZE: usize = 2 << 11;
