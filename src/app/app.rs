@@ -1,4 +1,4 @@
-use crate::emulator::emulator::*;
+use crate::emulator::Emulator;
 use softbuffer::{Context, Surface};
 use winit::application::ApplicationHandler;
 use winit::event::{WindowEvent};

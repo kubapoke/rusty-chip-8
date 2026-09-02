@@ -1,1 +1,3 @@
-pub mod emulator;
+mod emulator;
+
+pub use emulator::Emulator;

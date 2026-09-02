@@ -1,4 +1,4 @@
-use crate::app::app::App;
+use crate::app::App;
 use winit::event_loop::EventLoop;
 
 pub mod emulator;
