@@ -1,12 +1,12 @@
+use crate::app::utils::{fill_from_display, resize};
 use crate::emulator::Emulator;
+use log::info;
 use softbuffer::{Context, Surface};
 use winit::application::ApplicationHandler;
-use winit::event::{WindowEvent};
+use winit::dpi::LogicalSize;
+use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, OwnedDisplayHandle};
 use winit::window::{Window, WindowAttributes, WindowId};
-use log::info;
-use winit::dpi::LogicalSize;
-use crate::app::utils::{fill_from_display, resize};
 
 #[derive(Debug)]
 pub struct App {
@@ -49,12 +49,12 @@ impl ApplicationHandler for App {
             WindowEvent::CloseRequested => {
                 info!("Close was requested; stopping");
                 event_loop.exit();
-            },
+            }
             WindowEvent::SurfaceResized(surface_size) => {
                 let surface = self.surface.as_mut().expect("Resize event without a surface");
                 resize(surface, surface_size);
                 surface.window().request_redraw();
-            },
+            }
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_mut().expect("Failed to get the softbuffer buffer");
 

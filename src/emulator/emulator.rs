@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct Emulator {
@@ -7,8 +7,8 @@ pub struct Emulator {
     program_counter: u16,
     index: u16,
     stack: Vec<u16>,
-    delay_timer: Mutex<u8>,
-    sound_timer: Mutex<u8>,
+    delay_timer: Arc<Mutex<u8>>,
+    sound_timer: Arc<Mutex<u8>>,
     variables: [u8; VARIABLE_AMOUNT],
 }
 
@@ -20,12 +20,12 @@ impl Emulator {
             program_counter: 0,
             index: 0,
             stack: vec![],
-            delay_timer: Mutex::new(0),
-            sound_timer: Mutex::new(0),
+            delay_timer: Arc::new(Mutex::new(0)),
+            sound_timer: Arc::new(Mutex::new(0)),
             variables: [0; VARIABLE_AMOUNT],
         }
     }
-    
+
     pub fn display(&self) -> &[u32; 16] {
         &self.display
     }
