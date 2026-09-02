@@ -5,7 +5,7 @@ use winit::event::{WindowEvent};
 use winit::event_loop::{ActiveEventLoop, OwnedDisplayHandle};
 use winit::window::{Window, WindowAttributes, WindowId};
 use log::info;
-use crate::app::utils::{fill_from_bool_vec, resize};
+use crate::app::utils::{fill_from_display, resize};
 
 #[derive(Debug)]
 pub struct App {
@@ -48,9 +48,16 @@ impl ApplicationHandler for App {
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_mut().expect("Failed to get the softbuffer buffer");
 
-                let arr = vec![vec![false, true, false, true], vec![true, false, true, false]];
+                let arr = [0b1111_1111_1111_1111_1111_1111_1111_1111,0b0000_0000_0000_0000_0000_0000_0000_0000,
+                    0b1010_1010_1010_1010_1010_1010_1010_1010,0b0101_0101_0101_0101_0101_0101_0101_0101,
+                    0b1010_1010_1010_1010_1010_1010_1010_1010,0b0101_0101_0101_0101_0101_0101_0101_0101,
+                    0b1010_1010_1010_1010_1010_1010_1010_1010,0b0101_0101_0101_0101_0101_0101_0101_0101,
+                    0b1010_1010_1010_1010_1010_1010_1010_1010,0b0101_0101_0101_0101_0101_0101_0101_0101,
+                    0b1010_1010_1010_1010_1010_1010_1010_1010,0b0101_0101_0101_0101_0101_0101_0101_0101,
+                    0b1010_1010_1010_1010_1010_1010_1010_1010,0b0101_0101_0101_0101_0101_0101_0101_0101,
+                    0b1010_1010_1010_1010_1010_1010_1010_1010,0b0101_0101_0101_0101_0101_0101_0101_0101,];
 
-                fill_from_bool_vec(surface, &arr);
+                fill_from_display(surface, &arr);
             }
             _ => ()
         }

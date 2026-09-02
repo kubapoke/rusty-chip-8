@@ -1,4 +1,5 @@
 use std::num::NonZeroU32;
+use log::info;
 use softbuffer::{Buffer, Surface};
 use winit::dpi;
 use winit::raw_window_handle::{HasDisplayHandle, HasWindowHandle};
@@ -30,36 +31,43 @@ pub fn fill(
 }
 
 fn map_coordinates(
-    source_width: u16,
-    source_height: u16,
-    dest_width: u16,
-    dest_height: u16,
-    source_x: u16,
-    source_y: u16,
-) -> (u16, u16) {
-    todo!()
+    source_dimensions: (u32, u32),
+    dest_dimensions: (u32, u32),
+    dest_coords: (u32, u32)
+) -> (u32, u32) {
+    let source_x = (dest_coords.0 * source_dimensions.0) / dest_dimensions.0;
+    let source_y = (dest_coords.1 * source_dimensions.1) / dest_dimensions.1;
+    (source_x, source_y)
 }
 
 fn determine_pixel_color(
-    value: bool
+    value: u32
 ) -> u32 {
     match value {
-        true => ARRAY_TRUE_COLOR,
-        false => ARRAY_FALSE_COLOR,
+        0 => ARRAY_FALSE_COLOR,
+        _ => ARRAY_TRUE_COLOR,
     }
 }
 
-pub fn fill_from_bool_vec(
+pub fn fill_from_display(
     surface: &mut Surface<impl HasDisplayHandle, impl HasWindowHandle + AsRef<dyn Window>>,
-    vec: &Vec<Vec<bool>>
+    display: &[u32; 16]
 ) {
     let surface_size = surface.window().as_ref().surface_size();
     resize(surface, surface_size);
 
     let mut buffer = surface.buffer_mut().expect("Failed to get the softbuffer buffer");
 
+    let mut counter: u32 = 0;
+    let buffer_dims = (buffer.width().get(), buffer.height().get());
+    let display_dims = DISPLAY_DIMS;
+
     for pixel in buffer.iter_mut() {
-        todo!()
+        let buffer_coords = (counter % buffer_dims.0, counter / buffer_dims.0);
+        let coords = map_coordinates(display_dims, buffer_dims, buffer_coords);
+        *pixel = determine_pixel_color(*display.get(coords.1 as usize).expect("Failed to get display value") & (1 << (coords.0)));
+
+        counter += 1;
     }
 
     buffer.present().expect("Failed to present the softbuffer buffer");
@@ -67,3 +75,6 @@ pub fn fill_from_bool_vec(
 
 const ARRAY_FALSE_COLOR: u32 = 0x0000_0000;
 const ARRAY_TRUE_COLOR: u32 = 0xffff_ffff;
+const DISPLAY_WIDTH: u32 = 32;
+const DISPLAY_HEIGHT: u32 = 16;
+const DISPLAY_DIMS: (u32, u32) = (DISPLAY_WIDTH, DISPLAY_HEIGHT);
