@@ -1,6 +1,6 @@
+use super::app::{DISPLAY_WIDTH, DISPLAY_HEIGHT};
 use std::num::NonZeroU32;
-use log::info;
-use softbuffer::{Buffer, Surface};
+use softbuffer::Surface;
 use winit::dpi;
 use winit::raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use winit::window::Window;
@@ -75,6 +75,4 @@ pub fn fill_from_display(
 
 const ARRAY_FALSE_COLOR: u32 = 0x0000_0000;
 const ARRAY_TRUE_COLOR: u32 = 0xffff_ffff;
-const DISPLAY_WIDTH: u32 = 32;
-const DISPLAY_HEIGHT: u32 = 16;
 const DISPLAY_DIMS: (u32, u32) = (DISPLAY_WIDTH, DISPLAY_HEIGHT);

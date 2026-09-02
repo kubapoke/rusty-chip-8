@@ -5,6 +5,7 @@ use winit::event::{WindowEvent};
 use winit::event_loop::{ActiveEventLoop, OwnedDisplayHandle};
 use winit::window::{Window, WindowAttributes, WindowId};
 use log::info;
+use winit::dpi::{LogicalSize, Size};
 use crate::app::utils::{fill_from_display, resize};
 
 #[derive(Debug)]
@@ -24,7 +25,10 @@ impl App {
 
 impl ApplicationHandler for App {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
-        let window_attributes = WindowAttributes::default();
+        let window_attributes = WindowAttributes::default()
+            .with_surface_size(LogicalSize::new(DISPLAY_WIDTH * SIZE_MULTIPLIER, DISPLAY_HEIGHT * SIZE_MULTIPLIER))
+            .with_resizable(false)
+            .with_title("CHIP-8");
         let window = event_loop.create_window(window_attributes).expect("Failed creating window");
 
         let context =
@@ -54,3 +58,7 @@ impl ApplicationHandler for App {
         }
     }
 }
+
+pub const DISPLAY_WIDTH: u32 = 32;
+pub const DISPLAY_HEIGHT: u32 = 16;
+const SIZE_MULTIPLIER: u32 = 32;
