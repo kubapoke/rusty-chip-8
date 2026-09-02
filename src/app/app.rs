@@ -5,7 +5,7 @@ use winit::event::{WindowEvent};
 use winit::event_loop::{ActiveEventLoop, OwnedDisplayHandle};
 use winit::window::{Window, WindowAttributes, WindowId};
 use log::info;
-use crate::app::utils::{fill, resize};
+use crate::app::utils::{fill_from_bool_vec, resize};
 
 #[derive(Debug)]
 pub struct App {
@@ -47,7 +47,10 @@ impl ApplicationHandler for App {
             },
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_mut().expect("Failed to get the softbuffer buffer");
-                fill(surface, 0x00000000);
+
+                let arr = vec![vec![false, true, false, true], vec![true, false, true, false]];
+
+                fill_from_bool_vec(surface, &arr);
             }
             _ => ()
         }
