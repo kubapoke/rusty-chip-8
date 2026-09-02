@@ -58,7 +58,7 @@ impl ApplicationHandler for App {
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_mut().expect("Failed to get the softbuffer buffer");
 
-                fill_from_display(surface, self.emulator.display());
+                fill_from_display(surface, self.emulator.get_display());
             }
             _ => ()
         }
