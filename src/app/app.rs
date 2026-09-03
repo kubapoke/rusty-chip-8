@@ -14,7 +14,7 @@ use winit::window::{Window, WindowAttributes, WindowId};
 
 #[derive(Debug)]
 pub struct App {
-    display: Arc<Mutex<[u32; 16]>>,
+    display: Arc<Mutex<[u64; 32]>>,
     handle: JoinHandle<()>,
     surface: Option<Surface<OwnedDisplayHandle, Box<dyn Window>>>,
 }
@@ -71,14 +71,15 @@ impl ApplicationHandler for App {
             }
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_mut().expect("Failed to get the softbuffer buffer");
-
                 fill_from_display(surface, &self.display);
+
+                surface.window().request_redraw();
             }
             _ => ()
         }
     }
 }
 
-pub const DISPLAY_WIDTH: u32 = 32;
-pub const DISPLAY_HEIGHT: u32 = 16;
-const SIZE_MULTIPLIER: u32 = 32;
+pub const DISPLAY_WIDTH: u32 = 64;
+pub const DISPLAY_HEIGHT: u32 = 32;
+const SIZE_MULTIPLIER: u32 = 16;

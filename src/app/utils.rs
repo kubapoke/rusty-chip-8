@@ -42,7 +42,7 @@ fn map_coordinates(
 }
 
 fn determine_pixel_color(
-    value: u32
+    value: u64
 ) -> u32 {
     match value {
         0 => ARRAY_FALSE_COLOR,
@@ -52,7 +52,7 @@ fn determine_pixel_color(
 
 pub fn fill_from_display(
     surface: &mut Surface<impl HasDisplayHandle, impl HasWindowHandle + AsRef<dyn Window>>,
-    display: &Arc<Mutex<[u32; 16]>>,
+    display: &Arc<Mutex<[u64; 32]>>,
 ) {
     let surface_size = surface.window().as_ref().surface_size();
     resize(surface, surface_size);
@@ -61,11 +61,12 @@ pub fn fill_from_display(
     let buffer_dims = (buffer.width().get(), buffer.height().get());
     let display_dims = DISPLAY_DIMS;
 
+    let display = display.lock().unwrap();
     for (i, pixel) in buffer.iter_mut().enumerate() {
         let i = i as u32;
         let buffer_coords = (i % buffer_dims.0, i / buffer_dims.0);
         let coords = map_coordinates(display_dims, buffer_dims, buffer_coords);
-        *pixel = determine_pixel_color(*display.lock().unwrap().get(coords.1 as usize).expect("Failed to get display value") & (1 << (coords.0)));
+        *pixel = determine_pixel_color(*display.get(coords.1 as usize).expect("Failed to get display value") & (1 << ((DISPLAY_WIDTH as u64 - 1) - coords.0 as u64)));
     }
 
     buffer.present().expect("Failed to present the softbuffer buffer");
