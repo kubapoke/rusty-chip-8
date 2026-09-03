@@ -204,14 +204,14 @@ impl Emulator {
     fn execute_math_command(&mut self, command: &u16) {
         match get_n(command) {
             0x0 => self.execute_assign_command(command),
-            0x1 => todo!(),
-            0x2 => todo!(),
-            0x3 => todo!(),
-            0x4 => todo!(),
-            0x5 => todo!(),
-            0x6 => todo!(),
-            0x7 => todo!(),
-            0xe => todo!(),
+            0x1 => self.execute_or_command(command),
+            0x2 => self.execute_and_command(command),
+            0x3 => self.execute_xor_command(command),
+            0x4 => self.execute_add_command(command),
+            0x5 => self.execute_decrement_command(command),
+            0x6 => self.execute_shift_right_command(command),
+            0x7 => self.execute_subtract_command(command),
+            0xe => self.execute_shift_left_command(command),
             _ => panic!("Invalid command"),
         }
     }
@@ -220,6 +220,38 @@ impl Emulator {
         let x = get_x(command);
         let y = get_y(command);
         self.variables[x] = self.variables[y];
+    }
+
+    fn execute_or_command(&mut self, command: &u16) {
+        todo!()
+    }
+
+    fn execute_and_command(&mut self, command: &u16) {
+        todo!()
+    }
+
+    fn execute_xor_command(&mut self, command: &u16) {
+        todo!()
+    }
+
+    fn execute_add_command(&mut self, command: &u16) {
+        todo!()
+    }
+
+    fn execute_decrement_command(&mut self, command: &u16) {
+        todo!()
+    }
+
+    fn execute_shift_right_command(&mut self, command: &u16) {
+        todo!()
+    }
+
+    fn execute_subtract_command(&mut self, command: &u16) {
+        todo!()
+    }
+
+    fn execute_shift_left_command(&mut self, command: &u16) {
+        todo!()
     }
 
     fn execute_set_index_command(&mut self, command: &u16) {
@@ -452,6 +484,32 @@ mod test {
         emulator.execute_assign_command(&command);
 
         assert_eq!(emulator.variables[0], 1);
+    }
+
+    #[test]
+    fn test_or_command() {
+        let mut emulator = Emulator::new();
+
+        emulator.variables[0] = 0b1010_0000;
+        emulator.variables[1] = 0b0101_0000;
+
+        let command: u16 = 0x8011;
+        emulator.execute_or_command(&command);
+
+        assert_eq!(emulator.variables[0], 0b1111_0000);
+    }
+
+    #[test]
+    fn test_and_command() {
+        let mut emulator = Emulator::new();
+
+        emulator.variables[0] = 0b1010_0000;
+        emulator.variables[1] = 0b1101_0000;
+
+        let command: u16 = 0x8012;
+        emulator.execute_and_command(&command);
+
+        assert_eq!(emulator.variables[0], 0b1000_0000);
     }
 
     #[test]
