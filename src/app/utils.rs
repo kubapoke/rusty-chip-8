@@ -1,13 +1,14 @@
-use super::app::{DISPLAY_WIDTH, DISPLAY_HEIGHT};
-use std::num::NonZeroU32;
+use super::app::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
 use softbuffer::Surface;
+use std::num::NonZeroU32;
+use std::sync::{Arc, Mutex};
 use winit::dpi;
 use winit::raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use winit::window::Window;
 
 pub fn resize(
     surface: &mut Surface<impl HasDisplayHandle, impl HasWindowHandle>,
-    surface_size: dpi::PhysicalSize<u32>
+    surface_size: dpi::PhysicalSize<u32>,
 ) {
     let (Some(width), Some(height)) =
         (NonZeroU32::new(surface_size.width), NonZeroU32::new(surface_size.height))
@@ -20,7 +21,7 @@ pub fn resize(
 
 pub fn fill(
     surface: &mut Surface<impl HasDisplayHandle, impl HasWindowHandle + AsRef<dyn Window>>,
-    color: u32
+    color: u32,
 ) {
     let surface_size = surface.window().as_ref().surface_size();
     resize(surface, surface_size);
@@ -33,7 +34,7 @@ pub fn fill(
 fn map_coordinates(
     source_dimensions: (u32, u32),
     dest_dimensions: (u32, u32),
-    dest_coords: (u32, u32)
+    dest_coords: (u32, u32),
 ) -> (u32, u32) {
     let source_x = (dest_coords.0 * source_dimensions.0) / dest_dimensions.0;
     let source_y = (dest_coords.1 * source_dimensions.1) / dest_dimensions.1;
@@ -51,7 +52,7 @@ fn determine_pixel_color(
 
 pub fn fill_from_display(
     surface: &mut Surface<impl HasDisplayHandle, impl HasWindowHandle + AsRef<dyn Window>>,
-    display: &[u32; 16]
+    display: &Arc<Mutex<[u32; 16]>>,
 ) {
     let surface_size = surface.window().as_ref().surface_size();
     resize(surface, surface_size);
@@ -64,7 +65,7 @@ pub fn fill_from_display(
         let i = i as u32;
         let buffer_coords = (i % buffer_dims.0, i / buffer_dims.0);
         let coords = map_coordinates(display_dims, buffer_dims, buffer_coords);
-        *pixel = determine_pixel_color(*display.get(coords.1 as usize).expect("Failed to get display value") & (1 << (coords.0)));
+        *pixel = determine_pixel_color(*display.lock().unwrap().get(coords.1 as usize).expect("Failed to get display value") & (1 << (coords.0)));
     }
 
     buffer.present().expect("Failed to present the softbuffer buffer");

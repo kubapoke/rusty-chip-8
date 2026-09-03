@@ -14,23 +14,23 @@ use winit::window::{Window, WindowAttributes, WindowId};
 
 #[derive(Debug)]
 pub struct App {
-    emulator: Arc<Mutex<Emulator>>,
+    display: Arc<Mutex<[u32; 16]>>,
     handle: JoinHandle<()>,
     surface: Option<Surface<OwnedDisplayHandle, Box<dyn Window>>>,
 }
 
 impl App {
     pub fn new() -> Self {
-        let emulator = Arc::new(Mutex::new(Emulator::new()));
-        let emulator_clone = Arc::clone(&emulator);
+        let mut emulator = Emulator::new();
+        let display = emulator.get_display();
 
         let handle = thread::spawn(move || {
-            emulator_clone.as_ref().lock().unwrap().load_program(Path::new("./programs/IBM Logo.ch8")); // TODO: Add proper program loading
-            emulator_clone.as_ref().lock().unwrap().begin_execution();
+            emulator.load_program(Path::new("./programs/IBM Logo.ch8")); // TODO: Add proper program loading
+            emulator.begin_execution();
         });
 
         Self {
-            emulator,
+            display,
             handle,
             surface: None,
         }
@@ -72,7 +72,7 @@ impl ApplicationHandler for App {
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_mut().expect("Failed to get the softbuffer buffer");
 
-                fill_from_display(surface, self.emulator.as_ref().lock().unwrap().get_display());
+                fill_from_display(surface, &self.display);
             }
             _ => ()
         }

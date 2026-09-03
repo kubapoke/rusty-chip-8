@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 #[derive(Debug)]
 pub struct Emulator {
     memory: [u8; MEM_SIZE],
-    display: [u32; 16],
+    display: Arc<Mutex<[u32; 16]>>,
     program_counter: u16,
     index: u16,
     stack: Vec<u16>,
@@ -31,7 +31,7 @@ impl Emulator {
     pub fn new() -> Self {
         Self {
             memory: [0; MEM_SIZE],
-            display: [0; 16],
+            display: Arc::new(Mutex::new([0; 16])),
             program_counter: 0x200,
             index: 0,
             stack: vec![],
@@ -55,8 +55,8 @@ impl Emulator {
         self.load_program_into_memory(buffer);
     }
 
-    pub fn get_display(&self) -> &[u32; 16] {
-        &self.display
+    pub fn get_display(&self) -> Arc<Mutex<[u32; 16]>> {
+        Arc::clone(&self.display)
     }
 
     fn get_current_command_code(&self) -> u16 {
@@ -125,7 +125,7 @@ impl Emulator {
     }
 
     fn execute_clear_command(&mut self) {
-        self.display = [0; 16];
+        *self.display.lock().unwrap() = [0; 16];
     }
 
     fn execute_jump_command(&mut self, command: &u16) {
@@ -164,7 +164,7 @@ impl Emulator {
 
             let mut sprite = (self.get_shifted_index_value(i) as u32) << 26;
             sprite >>= x;
-            self.display[idx] ^= sprite;
+            (*self.display.lock().unwrap())[idx] ^= sprite;
         }
     }
 }
@@ -210,20 +210,20 @@ mod test {
         emulator.memory[0x200] = 0x00;
         emulator.memory[0x201] = 0xe0;
 
-        emulator.display = [0xffff_ffff; 16];
+        *emulator.display.lock().unwrap() = [0xffff_ffff; 16];
         emulator.execute_current_command();
 
-        assert_eq!(emulator.display, [0x0000_0000; 16]);
+        assert_eq!(*emulator.display.lock().unwrap(), [0x0000_0000; 16]);
     }
 
     #[test]
     fn test_execute_clear_command() {
         let mut emulator = Emulator::new();
 
-        emulator.display = [0xffff_ffff; 16];
+        *emulator.display.lock().unwrap() = [0xffff_ffff; 16];
         emulator.execute_clear_command();
 
-        assert_eq!(emulator.display, [0x0000_0000; 16]);
+        assert_eq!(*emulator.display.lock().unwrap(), [0x0000_0000; 16]);
     }
 
     #[test]
