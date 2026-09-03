@@ -130,9 +130,17 @@ impl Emulator {
         *self.display.lock().unwrap() = [0; 32];
     }
 
+    fn execute_return_from_subroutine_command(&mut self, command: &u16) {
+        todo!()
+    }
+
     fn execute_jump_command(&mut self, command: &u16) {
         let address = get_nnn(command);
         self.program_counter = address;
+    }
+
+    fn execute_call_subroutine_command(&mut self, command: &u16) {
+        todo!()
     }
 
     fn execute_set_register_command(&mut self, command: &u16) {
@@ -239,6 +247,22 @@ mod test {
     }
 
     #[test]
+    fn test_subroutine_execution() {
+        let mut emulator = Emulator::new();
+
+        emulator.memory[0x200..=0x201].clone_from_slice(&[0x14, 0x00]);
+        emulator.memory[0x402..=0x403].clone_from_slice(&[0x00, 0xee]);
+
+        assert_eq!(emulator.program_counter, 0x200);
+        emulator.execute_current_command();
+        assert_eq!(emulator.program_counter, 0x400);
+        emulator.execute_current_command();
+        assert_eq!(emulator.program_counter, 0x402);
+        emulator.execute_current_command();
+        assert_eq!(emulator.program_counter, 0x200);
+    }
+
+    #[test]
     fn test_execute_jump_command() {
         let mut emulator = Emulator::new();
 
@@ -295,7 +319,7 @@ mod test {
         let mut emulator = Emulator::new();
 
         emulator.execute_set_index_command(&0x0200);
-        emulator.memory[0x0200] = 0b1111_1111;
+        emulator.memory[0x0200..0x0208].clone_from_slice(&[0b1111_1111; 8]);
 
         emulator.execute_set_register_command(&0x6602);
         emulator.execute_set_register_command(&0x6701);
