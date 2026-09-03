@@ -148,15 +148,30 @@ impl Emulator {
     }
 
     fn execute_jump_if_equal_command(&mut self, command: &u16) {
-        todo!()
+        let lhs = self.variables[get_x(command)];
+        let rhs = get_nn(command);
+
+        if (lhs == rhs) {
+            self.program_counter += 2;
+        }
     }
 
     fn execute_jump_if_not_equal_command(&mut self, command: &u16) {
-        todo!()
+        let lhs = self.variables[get_x(command)];
+        let rhs = get_nn(command);
+
+        if (lhs != rhs) {
+            self.program_counter += 2;
+        }
     }
 
     fn execute_jump_if_registers_equal_command(&mut self, command: &u16) {
-        todo!()
+        let lhs = self.variables[get_x(command)];
+        let rhs = self.variables[get_y(command)];
+
+        if (lhs == rhs) {
+            self.program_counter += 2;
+        }
     }
 
     fn execute_set_register_command(&mut self, command: &u16) {
@@ -296,12 +311,12 @@ mod test {
         let command: u16 = 0x3000;
         emulator.program_counter = 0x200;
         emulator.execute_jump_if_equal_command(&command);
-        assert_eq!(emulator.program_counter, 0x202);
+        assert_eq!(emulator.program_counter, 0x200);
 
         let command: u16 = 0x3001;
         emulator.program_counter = 0x200;
         emulator.execute_jump_if_equal_command(&command);
-        assert_eq!(emulator.program_counter, 0x204);
+        assert_eq!(emulator.program_counter, 0x202);
     }
 
     #[test]
@@ -312,12 +327,12 @@ mod test {
         let command: u16 = 0x4000;
         emulator.program_counter = 0x200;
         emulator.execute_jump_if_not_equal_command(&command);
-        assert_eq!(emulator.program_counter, 0x204);
+        assert_eq!(emulator.program_counter, 0x202);
 
         let command: u16 = 0x4001;
         emulator.program_counter = 0x200;
         emulator.execute_jump_if_not_equal_command(&command);
-        assert_eq!(emulator.program_counter, 0x202);
+        assert_eq!(emulator.program_counter, 0x200);
     }
 
     #[test]
@@ -326,7 +341,7 @@ mod test {
         emulator.variables[0] = 0;
         emulator.variables[1] = 0;
 
-        let command: u16 = 0x5120;
+        let command: u16 = 0x5010;
         emulator.program_counter = 0x200;
         emulator.execute_jump_if_registers_equal_command(&command);
         assert_eq!(emulator.program_counter, 0x202);
@@ -334,10 +349,10 @@ mod test {
         emulator.variables[0] = 0;
         emulator.variables[1] = 1;
 
-        let command: u16 = 0x5120;
+        let command: u16 = 0x5010;
         emulator.program_counter = 0x200;
         emulator.execute_jump_if_registers_equal_command(&command);
-        assert_eq!(emulator.program_counter, 0x204);
+        assert_eq!(emulator.program_counter, 0x200);
     }
 
     #[test]
