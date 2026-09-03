@@ -3,6 +3,9 @@ use crate::emulator::Emulator;
 use log::info;
 use softbuffer::{Context, Surface};
 use std::path::Path;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::thread::JoinHandle;
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
 use winit::event::WindowEvent;
@@ -11,18 +14,24 @@ use winit::window::{Window, WindowAttributes, WindowId};
 
 #[derive(Debug)]
 pub struct App {
-    emulator: Emulator,
+    emulator: Arc<Mutex<Emulator>>,
+    handle: JoinHandle<()>,
     surface: Option<Surface<OwnedDisplayHandle, Box<dyn Window>>>,
 }
 
 impl App {
     pub fn new() -> Self {
-        let mut emulator = Emulator::new();
-        emulator.load_program(&Path::new("./programs/IBM Logo.ch8")); // TODO: Add proper program loading
-        emulator.begin_execution();
+        let emulator = Arc::new(Mutex::new(Emulator::new()));
+        let emulator_clone = Arc::clone(&emulator);
+
+        let handle = thread::spawn(move || {
+            emulator_clone.as_ref().lock().unwrap().load_program(Path::new("./programs/IBM Logo.ch8")); // TODO: Add proper program loading
+            emulator_clone.as_ref().lock().unwrap().begin_execution();
+        });
 
         Self {
             emulator,
+            handle,
             surface: None,
         }
     }
@@ -63,7 +72,7 @@ impl ApplicationHandler for App {
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_mut().expect("Failed to get the softbuffer buffer");
 
-                fill_from_display(surface, self.emulator.get_display());
+                fill_from_display(surface, self.emulator.as_ref().lock().unwrap().get_display());
             }
             _ => ()
         }

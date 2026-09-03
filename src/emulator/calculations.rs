@@ -2,7 +2,7 @@ fn get_nibbles(num: &u16, first: usize, last: usize) -> u16 {
     let mut mask: u16 = 0;
     for i in first..=last {
         let shift = i as u16;
-        mask |= 0xf000 >> 4 * shift;
+        mask |= 0xf000 >> (4 * shift);
     }
     *num & mask
 }

@@ -32,7 +32,7 @@ impl Emulator {
         Self {
             memory: [0; MEM_SIZE],
             display: [0; 16],
-            program_counter: 0,
+            program_counter: 0x200,
             index: 0,
             stack: vec![],
             delay_timer: Arc::new(Mutex::new(0)),
@@ -48,10 +48,10 @@ impl Emulator {
     }
 
     pub fn load_program(&mut self, filename: &Path) {
-        let mut f = File::open(&filename).expect("No file found");
-        let metadata = fs::metadata(&filename).expect("Unable to read metadata");
+        let mut f = File::open(filename).expect("No file found");
+        let metadata = fs::metadata(filename).expect("Unable to read metadata");
         let mut buffer = vec![0; metadata.len() as usize];
-        f.read(&mut buffer).expect("Buffer overflow");
+        f.read_exact(&mut buffer).expect("Buffer overflow");
         self.load_program_into_memory(buffer);
     }
 
@@ -61,41 +61,51 @@ impl Emulator {
 
     fn get_current_command_code(&self) -> u16 {
         let pc = self.program_counter as usize;
-        ((self.memory[pc] as u16) << 8) | self.memory[pc] as u16
+        ((self.memory[pc] as u16) << 8) | self.memory[pc + 1] as u16
     }
 
     fn get_current_index_value(&self) -> u8 {
-        self.memory[self.index as usize]
+        self.get_shifted_index_value(0)
     }
 
     fn get_shifted_index_value(&self, shift: usize) -> u8 {
         self.memory[self.index as usize + shift]
     }
 
-    fn execute_current_command(&mut self) {
-        let command = self.get_current_command_code();
+    fn execute_command(&mut self, command: &u16) {
+        let pc = self.program_counter;
+        let id = self.index;
+        println!("pc {pc:#06x} | executing {command:#06x} | index {id:#06x}"); // TODO: Replace with proper logic
 
-        match get_code(&command) {
-            0x0 => self.execute_0_command(&command),
-            0x1 => self.execute_jump_command(&command),
+        match get_code(command) {
+            0x0 => self.execute_0_command(command),
+            0x1 => self.execute_jump_command(command),
             0x2 => todo!(),
             0x3 => todo!(),
             0x4 => todo!(),
             0x5 => todo!(),
-            0x6 => self.execute_set_register_command(&command),
-            0x7 => self.execute_add_to_register_command(&command),
+            0x6 => self.execute_set_register_command(command),
+            0x7 => self.execute_add_to_register_command(command),
             0x8 => todo!(),
             0x9 => todo!(),
-            0xa => self.execute_set_index_command(&command),
+            0xa => self.execute_set_index_command(command),
             0xb => todo!(),
             0xc => todo!(),
-            0xd => self.execute_draw_command(&command),
+            0xd => self.execute_draw_command(command),
             0xe => todo!(),
             0xf => todo!(),
             _ => unreachable!(),
-        }
+        };
+    }
 
-        self.program_counter += 1;
+    fn execute_current_command(&mut self) {
+        let command = self.get_current_command_code();
+
+        self.execute_command(&command);
+
+        if get_code(&command) != 0x1 {
+            self.program_counter += 2;
+        }
     }
 
     pub fn begin_execution(&mut self) {
@@ -119,33 +129,33 @@ impl Emulator {
     }
 
     fn execute_jump_command(&mut self, command: &u16) {
-        let address = get_nnn(&command);
+        let address = get_nnn(command);
         self.program_counter = address;
     }
 
     fn execute_set_register_command(&mut self, command: &u16) {
-        let variable = get_x(&command);
-        let value = get_nn(&command);
+        let variable = get_x(command);
+        let value = get_nn(command);
 
         self.variables[variable] = value;
     }
 
     fn execute_add_to_register_command(&mut self, command: &u16) {
-        let variable = get_x(&command);
-        let value = get_nn(&command);
+        let variable = get_x(command);
+        let value = get_nn(command);
 
         self.variables[variable] = self.variables[variable].saturating_add(value);
     }
 
     fn execute_set_index_command(&mut self, command: &u16) {
-        let value = get_nnn(&command);
+        let value = get_nnn(command);
         self.index = value;
     }
 
     fn execute_draw_command(&mut self, command: &u16) {
-        let x = get_x(&command) % DISPLAY_WIDTH as usize;
-        let y = get_y(&command) % DISPLAY_HEIGHT as usize;
-        let n = get_n(&command) as usize;
+        let x = get_x(command) % DISPLAY_WIDTH as usize;
+        let y = get_y(command) % DISPLAY_HEIGHT as usize;
+        let n = get_n(command) as usize;
 
         for (i, idx) in (y..y + n).enumerate() {
             if idx >= DISPLAY_HEIGHT as usize {
@@ -188,3 +198,83 @@ const FONT: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 ];
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_execute_current_command() {
+        let mut emulator = Emulator::new();
+
+        emulator.memory[0x200] = 0x00;
+        emulator.memory[0x201] = 0xe0;
+
+        emulator.display = [0xffff_ffff; 16];
+        emulator.execute_current_command();
+
+        assert_eq!(emulator.display, [0x0000_0000; 16]);
+    }
+
+    #[test]
+    fn test_execute_clear_command() {
+        let mut emulator = Emulator::new();
+
+        emulator.display = [0xffff_ffff; 16];
+        emulator.execute_clear_command();
+
+        assert_eq!(emulator.display, [0x0000_0000; 16]);
+    }
+
+    #[test]
+    fn test_execute_jump_command() {
+        let mut emulator = Emulator::new();
+
+        let command: u16 = 0x1abc;
+        emulator.execute_jump_command(&command);
+
+        assert_eq!(emulator.program_counter, 0x0abc);
+    }
+
+    #[test]
+    fn text_execute_set_register_command() {
+        let mut emulator = Emulator::new();
+
+        let command: u16 = 0x6abc;
+        emulator.execute_set_register_command(&command);
+
+        assert_eq!(emulator.variables[0xa], 0xbc);
+    }
+
+    #[test]
+    fn test_execute_add_to_register_command() {
+        let mut emulator = Emulator::new();
+
+        assert_eq!(emulator.variables[0xa], 0x00);
+
+        let command: u16 = 0x7abc;
+        emulator.execute_add_to_register_command(&command);
+
+        assert_eq!(emulator.variables[0xa], 0xbc);
+
+        let command: u16 = 0x7a01;
+        emulator.execute_add_to_register_command(&command);
+
+        assert_eq!(emulator.variables[0xa], 0xbd);
+
+        let command: u16 = 0x7abc;
+        emulator.execute_add_to_register_command(&command);
+
+        assert_eq!(emulator.variables[0xa], 0xff);
+    }
+
+    #[test]
+    fn test_execute_set_index_command() {
+        let mut emulator = Emulator::new();
+
+        let command: u16 = 0xaabc;
+        emulator.execute_set_index_command(&command);
+
+        assert_eq!(emulator.index, 0xabc);
+    }
+}
