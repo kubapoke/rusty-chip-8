@@ -15,6 +15,7 @@ pub struct Emulator {
     delay_timer: Arc<Mutex<u8>>,
     sound_timer: Arc<Mutex<u8>>,
     variables: [u8; REGISTER_COUNT],
+    inputs: u16,
     finish_requested: bool,
 }
 
@@ -38,6 +39,7 @@ impl Emulator {
             delay_timer: Arc::new(Mutex::new(0)),
             sound_timer: Arc::new(Mutex::new(0)),
             variables: [0; REGISTER_COUNT],
+            inputs: 0,
             finish_requested: false,
         }
             .with_font_in_memory()
