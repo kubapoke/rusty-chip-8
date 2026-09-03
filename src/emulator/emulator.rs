@@ -83,9 +83,9 @@ impl Emulator {
             0x0 => self.execute_0_command(command),
             0x1 => self.execute_jump_command(command),
             0x2 => self.execute_call_subroutine_command(command),
-            0x3 => todo!(),
-            0x4 => todo!(),
-            0x5 => todo!(),
+            0x3 => self.execute_jump_if_equal_command(command),
+            0x4 => self.execute_jump_if_not_equal_command(command),
+            0x5 => self.execute_jump_if_registers_equal_command(command),
             0x6 => self.execute_set_register_command(command),
             0x7 => self.execute_add_to_register_command(command),
             0x8 => todo!(),
@@ -145,6 +145,18 @@ impl Emulator {
         self.stack.push(self.program_counter);
         let address = get_nnn(command);
         self.program_counter = address;
+    }
+
+    fn execute_jump_if_equal_command(&mut self, command: &u16) {
+        todo!()
+    }
+
+    fn execute_jump_if_not_equal_command(&mut self, command: &u16) {
+        todo!()
+    }
+
+    fn execute_jump_if_registers_equal_command(&mut self, command: &u16) {
+        todo!()
     }
 
     fn execute_set_register_command(&mut self, command: &u16) {
@@ -274,6 +286,58 @@ mod test {
         emulator.execute_jump_command(&command);
 
         assert_eq!(emulator.program_counter, 0x0abc);
+    }
+
+    #[test]
+    fn test_execute_jump_if_equal_command() {
+        let mut emulator = Emulator::new();
+        emulator.variables[0] = 1;
+
+        let command: u16 = 0x3000;
+        emulator.program_counter = 0x200;
+        emulator.execute_jump_if_equal_command(&command);
+        assert_eq!(emulator.program_counter, 0x202);
+
+        let command: u16 = 0x3001;
+        emulator.program_counter = 0x200;
+        emulator.execute_jump_if_equal_command(&command);
+        assert_eq!(emulator.program_counter, 0x204);
+    }
+
+    #[test]
+    fn test_execute_jump_if_not_equal_command() {
+        let mut emulator = Emulator::new();
+        emulator.variables[0] = 1;
+
+        let command: u16 = 0x4000;
+        emulator.program_counter = 0x200;
+        emulator.execute_jump_if_not_equal_command(&command);
+        assert_eq!(emulator.program_counter, 0x204);
+
+        let command: u16 = 0x4001;
+        emulator.program_counter = 0x200;
+        emulator.execute_jump_if_not_equal_command(&command);
+        assert_eq!(emulator.program_counter, 0x202);
+    }
+
+    #[test]
+    fn test_execute_jump_if_registers_equal_command() {
+        let mut emulator = Emulator::new();
+        emulator.variables[0] = 0;
+        emulator.variables[1] = 0;
+
+        let command: u16 = 0x5120;
+        emulator.program_counter = 0x200;
+        emulator.execute_jump_if_registers_equal_command(&command);
+        assert_eq!(emulator.program_counter, 0x202);
+
+        emulator.variables[0] = 0;
+        emulator.variables[1] = 1;
+
+        let command: u16 = 0x5120;
+        emulator.program_counter = 0x200;
+        emulator.execute_jump_if_registers_equal_command(&command);
+        assert_eq!(emulator.program_counter, 0x204);
     }
 
     #[test]
