@@ -82,7 +82,7 @@ impl Emulator {
         match get_code(command) {
             0x0 => self.execute_0_command(command),
             0x1 => self.execute_jump_command(command),
-            0x2 => todo!(),
+            0x2 => self.execute_call_subroutine_command(command),
             0x3 => todo!(),
             0x4 => todo!(),
             0x5 => todo!(),
@@ -105,7 +105,8 @@ impl Emulator {
 
         self.execute_command(&command);
 
-        if get_code(&command) != 0x1 {
+        let code = get_code(&command);
+        if code != 0x1 && code != 0x2 {
             self.program_counter += PROGRAM_COUNTER_MOVE;
         }
     }
@@ -121,7 +122,7 @@ impl Emulator {
     fn execute_0_command(&mut self, command: &u16) {
         match command {
             0x00e0 => self.execute_clear_command(),
-            0x0ee0 => todo!(),
+            0x00ee => self.execute_return_from_subroutine_command(),
             _ => (),
         };
     }
@@ -130,8 +131,9 @@ impl Emulator {
         *self.display.lock().unwrap() = [0; 32];
     }
 
-    fn execute_return_from_subroutine_command(&mut self, command: &u16) {
-        todo!()
+    fn execute_return_from_subroutine_command(&mut self) {
+        let return_address = self.stack.pop().expect("The stack is empty; nowhere to return to");
+        self.program_counter = return_address;
     }
 
     fn execute_jump_command(&mut self, command: &u16) {
@@ -140,7 +142,9 @@ impl Emulator {
     }
 
     fn execute_call_subroutine_command(&mut self, command: &u16) {
-        todo!()
+        self.stack.push(self.program_counter);
+        let address = get_nnn(command);
+        self.program_counter = address;
     }
 
     fn execute_set_register_command(&mut self, command: &u16) {
@@ -250,7 +254,7 @@ mod test {
     fn test_subroutine_execution() {
         let mut emulator = Emulator::new();
 
-        emulator.memory[0x200..=0x201].clone_from_slice(&[0x14, 0x00]);
+        emulator.memory[0x200..=0x201].clone_from_slice(&[0x24, 0x00]);
         emulator.memory[0x402..=0x403].clone_from_slice(&[0x00, 0xee]);
 
         assert_eq!(emulator.program_counter, 0x200);
@@ -259,7 +263,7 @@ mod test {
         emulator.execute_current_command();
         assert_eq!(emulator.program_counter, 0x402);
         emulator.execute_current_command();
-        assert_eq!(emulator.program_counter, 0x200);
+        assert_eq!(emulator.program_counter, 0x202);
     }
 
     #[test]
