@@ -89,7 +89,7 @@ impl Emulator {
             0x6 => self.execute_set_register_command(command),
             0x7 => self.execute_add_to_register_command(command),
             0x8 => todo!(),
-            0x9 => todo!(),
+            0x9 => self.execute_jump_if_registers_not_equal_command(command),
             0xa => self.execute_set_index_command(command),
             0xb => todo!(),
             0xc => todo!(),
@@ -170,6 +170,15 @@ impl Emulator {
         let rhs = self.variables[get_y(command)];
 
         if (lhs == rhs) {
+            self.program_counter += 2;
+        }
+    }
+
+    fn execute_jump_if_registers_not_equal_command(&mut self, command: &u16) {
+        let lhs = self.variables[get_x(command)];
+        let rhs = self.variables[get_y(command)];
+
+        if (lhs != rhs) {
             self.program_counter += 2;
         }
     }
@@ -353,6 +362,26 @@ mod test {
         emulator.program_counter = 0x200;
         emulator.execute_jump_if_registers_equal_command(&command);
         assert_eq!(emulator.program_counter, 0x200);
+    }
+
+    #[test]
+    fn test_execute_jump_if_registers_not_equal_command() {
+        let mut emulator = Emulator::new();
+        emulator.variables[0] = 0;
+        emulator.variables[1] = 0;
+
+        let command: u16 = 0x5010;
+        emulator.program_counter = 0x200;
+        emulator.execute_jump_if_registers_not_equal_command(&command);
+        assert_eq!(emulator.program_counter, 0x200);
+
+        emulator.variables[0] = 0;
+        emulator.variables[1] = 1;
+
+        let command: u16 = 0x5010;
+        emulator.program_counter = 0x200;
+        emulator.execute_jump_if_registers_not_equal_command(&command);
+        assert_eq!(emulator.program_counter, 0x202);
     }
 
     #[test]
