@@ -1,3 +1,4 @@
+use std::env::var;
 use crate::emulator::calculations::{get_code, get_n, get_nn, get_nnn, get_x, get_y};
 use std::fs::File;
 use std::io::Read;
@@ -202,7 +203,7 @@ impl Emulator {
 
     fn execute_math_command(&mut self, command: &u16) {
         match get_n(command) {
-            0x0 => todo!(),
+            0x0 => self.execute_assign_command(command),
             0x1 => todo!(),
             0x2 => todo!(),
             0x3 => todo!(),
@@ -213,6 +214,12 @@ impl Emulator {
             0xe => todo!(),
             _ => panic!("Invalid command"),
         }
+    }
+
+    fn execute_assign_command(&mut self, command: &u16) {
+        let x = get_x(command);
+        let y = get_y(command);
+        self.variables[x] = self.variables[y];
     }
 
     fn execute_set_index_command(&mut self, command: &u16) {
@@ -282,7 +289,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_execute_current_command() {
+    fn test_current_command() {
         let mut emulator = Emulator::new();
 
         emulator.memory[0x200] = 0x00;
@@ -295,7 +302,7 @@ mod test {
     }
 
     #[test]
-    fn test_execute_clear_command() {
+    fn test_clear_command() {
         let mut emulator = Emulator::new();
 
         *emulator.display.lock().unwrap() = [0xffff_ffff_ffff_ffff; 32];
@@ -321,7 +328,7 @@ mod test {
     }
 
     #[test]
-    fn test_execute_jump_command() {
+    fn test_jump_command() {
         let mut emulator = Emulator::new();
 
         let command: u16 = 0x1abc;
@@ -331,7 +338,7 @@ mod test {
     }
 
     #[test]
-    fn test_execute_jump_if_equal_command() {
+    fn test_jump_if_equal_command() {
         let mut emulator = Emulator::new();
         emulator.variables[0] = 1;
 
@@ -347,7 +354,7 @@ mod test {
     }
 
     #[test]
-    fn test_execute_jump_if_not_equal_command() {
+    fn test_jump_if_not_equal_command() {
         let mut emulator = Emulator::new();
         emulator.variables[0] = 1;
 
@@ -363,7 +370,7 @@ mod test {
     }
 
     #[test]
-    fn test_execute_jump_if_registers_equal_command() {
+    fn test_jump_if_registers_equal_command() {
         let mut emulator = Emulator::new();
         emulator.variables[0] = 0;
         emulator.variables[1] = 0;
@@ -383,7 +390,7 @@ mod test {
     }
 
     #[test]
-    fn test_execute_jump_if_registers_not_equal_command() {
+    fn test_jump_if_registers_not_equal_command() {
         let mut emulator = Emulator::new();
         emulator.variables[0] = 0;
         emulator.variables[1] = 0;
@@ -413,7 +420,7 @@ mod test {
     }
 
     #[test]
-    fn test_execute_add_to_register_command() {
+    fn test_add_to_register_command() {
         let mut emulator = Emulator::new();
 
         assert_eq!(emulator.variables[0xa], 0x00);
@@ -435,7 +442,20 @@ mod test {
     }
 
     #[test]
-    fn test_execute_set_index_command() {
+    fn test_assign_command() {
+        let mut emulator = Emulator::new();
+        
+        emulator.variables[0] = 0;
+        emulator.variables[1] = 1;
+        
+        let command: u16 = 0x8010;
+        emulator.execute_assign_command(&command);
+
+        assert_eq!(emulator.variables[0], 1);
+    }
+
+    #[test]
+    fn test_set_index_command() {
         let mut emulator = Emulator::new();
 
         let command: u16 = 0xaabc;
@@ -445,7 +465,7 @@ mod test {
     }
 
     #[test]
-    fn test_execute_draw_command() {
+    fn test_draw_command() {
         let mut emulator = Emulator::new();
 
         emulator.execute_set_index_command(&0x0200);
