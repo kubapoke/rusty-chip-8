@@ -19,6 +19,7 @@ impl App {
     pub fn new() -> Self {
         let mut emulator = Emulator::new();
         emulator.load_program(&Path::new("./programs/IBM Logo.ch8")); // TODO: Add proper program loading
+        emulator.begin_execution();
 
         Self {
             emulator,
