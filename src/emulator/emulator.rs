@@ -4,6 +4,7 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::fs;
+use crate::emulator::config::EmulatorConfig;
 
 #[derive(Debug)]
 pub struct Emulator {
@@ -16,6 +17,7 @@ pub struct Emulator {
     sound_timer: Arc<Mutex<u8>>,
     variables: [u8; REGISTER_COUNT],
     inputs: u16,
+    config: EmulatorConfig,
     finish_requested: bool,
 }
 
@@ -40,6 +42,7 @@ impl Emulator {
             sound_timer: Arc::new(Mutex::new(0)),
             variables: [0; REGISTER_COUNT],
             inputs: 0,
+            config: EmulatorConfig::default(),
             finish_requested: false,
         }
             .with_font_in_memory()
@@ -88,7 +91,7 @@ impl Emulator {
             0x5 => self.execute_jump_if_registers_equal_command(command),
             0x6 => self.execute_set_register_command(command),
             0x7 => self.execute_add_to_register_command(command),
-            0x8 => todo!(),
+            0x8 => self.execute_math_command(command),
             0x9 => self.execute_jump_if_registers_not_equal_command(command),
             0xa => self.execute_set_index_command(command),
             0xb => todo!(),
@@ -96,7 +99,7 @@ impl Emulator {
             0xd => self.execute_draw_command(command),
             0xe => todo!(),
             0xf => todo!(),
-            _ => unreachable!(),
+            _ => panic!("Invalid command"),
         };
     }
 
@@ -195,6 +198,21 @@ impl Emulator {
         let value = get_nn(command);
 
         self.variables[variable] = self.variables[variable].saturating_add(value);
+    }
+
+    fn execute_math_command(&mut self, command: &u16) {
+        match get_n(command) {
+            0x0 => todo!(),
+            0x1 => todo!(),
+            0x2 => todo!(),
+            0x3 => todo!(),
+            0x4 => todo!(),
+            0x5 => todo!(),
+            0x6 => todo!(),
+            0x7 => todo!(),
+            0xe => todo!(),
+            _ => panic!("Invalid command"),
+        }
     }
 
     fn execute_set_index_command(&mut self, command: &u16) {
