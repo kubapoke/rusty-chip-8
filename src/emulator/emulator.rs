@@ -1,11 +1,10 @@
-use std::env::var;
-use crate::emulator::calculations::{extract_values};
+use crate::emulator::calculations::extract_values;
+use crate::emulator::config::EmulatorConfig;
+use std::fs;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use std::fs;
-use crate::emulator::config::EmulatorConfig;
 
 #[derive(Debug)]
 pub struct Emulator {
@@ -83,7 +82,7 @@ impl Emulator {
         let id = self.index;
         println!("pc {pc:#06x} | executing {command:#06x} | index {id:#06x}"); // TODO: Replace with proper logic
 
-        let (code, x, y, n, nn ,nnn) = extract_values(command);
+        let (code, x, y, n, nn, nnn) = extract_values(command);
 
         match code {
             0x0 => self.execute_0_command(command),
@@ -193,7 +192,7 @@ impl Emulator {
     }
 
     fn execute_add_to_register_command(&mut self, x: usize, nn: u8) {
-        self.variables[x] = self.variables[x].saturating_add(nn);
+        self.variables[x] = self.variables[x].wrapping_add(nn);
     }
 
     fn execute_math_command(&mut self, x: usize, y: usize, n: u8) {
@@ -235,11 +234,11 @@ impl Emulator {
         todo!()
     }
 
-    fn execute_shift_right_command(&mut self, x: usize, y: usize) {
+    fn execute_subtract_command(&mut self, x: usize, y: usize) {
         todo!()
     }
 
-    fn execute_subtract_command(&mut self, x: usize, y: usize) {
+    fn execute_shift_right_command(&mut self, x: usize, y: usize) {
         todo!()
     }
 
@@ -309,6 +308,7 @@ const FONT: [u8; 80] = [
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::emulator::config::ShiftBehaviour;
 
     #[test]
     fn test_current_command() {
@@ -442,18 +442,19 @@ mod test {
         assert_eq!(emulator.variables[0xa], 0xbd);
 
         emulator.execute_add_to_register_command(0xa, 0xbc);
-        assert_eq!(emulator.variables[0xa], 0xff);
+        assert_eq!(emulator.variables[0xa], 0x79);
     }
 
     #[test]
     fn test_assign_command() {
         let mut emulator = Emulator::new();
-        
+
         emulator.variables[0] = 0;
         emulator.variables[1] = 1;
 
         emulator.execute_assign_command(0, 1);
         assert_eq!(emulator.variables[0], 1);
+        assert_eq!(emulator.variables[1], 1);
     }
 
     #[test]
@@ -465,6 +466,7 @@ mod test {
 
         emulator.execute_or_command(0, 1);
         assert_eq!(emulator.variables[0], 0b1111_0000);
+        assert_eq!(emulator.variables[1], 0b0101_0000);
     }
 
     #[test]
@@ -476,6 +478,185 @@ mod test {
 
         emulator.execute_and_command(0, 1);
         assert_eq!(emulator.variables[0], 0b1000_0000);
+        assert_eq!(emulator.variables[1], 0b1101_0000);
+    }
+
+    #[test]
+    fn test_xor_command() {
+        let mut emulator = Emulator::new();
+
+        emulator.variables[0] = 0b1010_0000;
+        emulator.variables[1] = 0b1101_0000;
+
+        emulator.execute_xor_command(0, 1);
+        assert_eq!(emulator.variables[0], 0b0111_0000);
+    }
+
+    #[test]
+    fn test_add_command() {
+        let mut emulator = Emulator::new();
+
+        emulator.variables[0] = 0x12;
+        emulator.variables[1] = 0x15;
+
+        emulator.execute_add_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0x27);
+        assert_eq!(emulator.variables[0x1], 0x15);
+        assert_eq!(emulator.variables[0xf], 0);
+
+        emulator.variables[0] = 0xdd;
+        emulator.variables[1] = 0xdd;
+
+        emulator.execute_add_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0xbb);
+        assert_eq!(emulator.variables[0x1], 0xdd);
+        assert_eq!(emulator.variables[0xf], 1);
+
+        emulator.variables[0] = 0xfe;
+        emulator.variables[1] = 0x01;
+
+        emulator.execute_add_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0xff);
+        assert_eq!(emulator.variables[0x1], 0x01);
+        assert_eq!(emulator.variables[0xf], 0);
+    }
+
+    #[test]
+    fn test_decrement_command() {
+        let mut emulator = Emulator::new();
+
+        emulator.variables[0] = 0x15;
+        emulator.variables[1] = 0x12;
+
+        emulator.execute_decrement_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0x03);
+        assert_eq!(emulator.variables[0x1], 0x12);
+        assert_eq!(emulator.variables[0xf], 1);
+
+        emulator.variables[0] = 0x12;
+        emulator.variables[1] = 0x15;
+
+        emulator.execute_decrement_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0xfc);
+        assert_eq!(emulator.variables[0x1], 0x15);
+        assert_eq!(emulator.variables[0xf], 0);
+
+        emulator.variables[0] = 0xff;
+        emulator.variables[1] = 0xff;
+
+        emulator.execute_decrement_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0x0);
+        assert_eq!(emulator.variables[0x1], 0xff);
+        assert_eq!(emulator.variables[0xf], 1);
+    }
+
+    #[test]
+    fn test_subtract_command() {
+        let mut emulator = Emulator::new();
+
+        emulator.variables[0] = 0x12;
+        emulator.variables[1] = 0x15;
+
+        emulator.execute_subtract_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0x03);
+        assert_eq!(emulator.variables[0x1], 0x15);
+        assert_eq!(emulator.variables[0xf], 1);
+
+        emulator.variables[0] = 0x15;
+        emulator.variables[1] = 0x12;
+
+        emulator.execute_subtract_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0xfc);
+        assert_eq!(emulator.variables[0x1], 0x12);
+        assert_eq!(emulator.variables[0xf], 0);
+
+        emulator.variables[0] = 0xff;
+        emulator.variables[1] = 0xff;
+
+        emulator.execute_subtract_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0x0);
+        assert_eq!(emulator.variables[0x1], 0xff);
+        assert_eq!(emulator.variables[0xf], 1);
+    }
+
+    #[test]
+    fn test_shift_right_command() {
+        let mut emulator = Emulator::new();
+        emulator.config.shift_behaviour = ShiftBehaviour::CopyVY;
+
+        emulator.variables[0] = 0b1100_1100;
+        emulator.variables[1] = 0b0011_0011;
+
+        emulator.execute_shift_right_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0b0001_1001);
+        assert_eq!(emulator.variables[0x1], 0b0011_0011);
+        assert_eq!(emulator.variables[0xf], 1);
+
+        emulator.variables[0] = 0b0011_0011;
+        emulator.variables[1] = 0b1100_1100;
+
+        emulator.execute_shift_right_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0b0110_0110);
+        assert_eq!(emulator.variables[0x1], 0b1100_1100);
+        assert_eq!(emulator.variables[0xf], 0);
+
+        emulator.config.shift_behaviour = ShiftBehaviour::IgnoreVY;
+
+        emulator.variables[0] = 0b1100_1100;
+        emulator.variables[1] = 0b0011_0011;
+
+        emulator.execute_shift_right_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0b0110_0110);
+        assert_eq!(emulator.variables[0x1], 0b0011_0011);
+        assert_eq!(emulator.variables[0xf], 0);
+
+        emulator.variables[0] = 0b0011_0011;
+        emulator.variables[1] = 0b1100_1100;
+
+        emulator.execute_shift_right_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0b0001_1001);
+        assert_eq!(emulator.variables[0x1], 0b1100_1100);
+        assert_eq!(emulator.variables[0xf], 1);
+    }
+
+    #[test]
+    fn test_shift_left_command() {
+        let mut emulator = Emulator::new();
+        emulator.config.shift_behaviour = ShiftBehaviour::CopyVY;
+
+        emulator.variables[0] = 0b1100_1100;
+        emulator.variables[1] = 0b0011_0011;
+
+        emulator.execute_shift_left_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0b0110_0110);
+        assert_eq!(emulator.variables[0x1], 0b0011_0011);
+        assert_eq!(emulator.variables[0xf], 0);
+
+        emulator.variables[0] = 0b0011_0011;
+        emulator.variables[1] = 0b1100_1100;
+
+        emulator.execute_shift_left_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0b1001_1000);
+        assert_eq!(emulator.variables[0x1], 0b1100_1100);
+        assert_eq!(emulator.variables[0xf], 1);
+
+        emulator.config.shift_behaviour = ShiftBehaviour::IgnoreVY;
+
+        emulator.variables[0] = 0b1100_1100;
+        emulator.variables[1] = 0b0011_0011;
+
+        emulator.execute_shift_left_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0b1001_1000);
+        assert_eq!(emulator.variables[0x1], 0b0011_0011);
+        assert_eq!(emulator.variables[0xf], 1);
+
+        emulator.variables[0] = 0b0011_0011;
+        emulator.variables[1] = 0b1100_1100;
+
+        emulator.execute_shift_left_command(0, 1);
+        assert_eq!(emulator.variables[0x0], 0b0110_0110);
+        assert_eq!(emulator.variables[0x1], 0b1100_1100);
+        assert_eq!(emulator.variables[0xf], 0);
     }
 
     #[test]

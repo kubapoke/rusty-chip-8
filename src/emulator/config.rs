@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub struct EmulatorConfig {
     pub shift_behaviour: ShiftBehaviour,
-    pub offset_jump_behaviour: OffsetJumpBehaviour
+    pub offset_jump_behaviour: OffsetJumpBehaviour,
 }
 
 impl EmulatorConfig {
@@ -20,13 +20,13 @@ impl Default for EmulatorConfig {
 }
 
 #[derive(Debug)]
-enum ShiftBehaviour {
+pub enum ShiftBehaviour {
     CopyVY,
     IgnoreVY,
 }
 
 #[derive(Debug)]
-enum OffsetJumpBehaviour {
+pub enum OffsetJumpBehaviour {
     AddV0,
     AddVX,
 }
