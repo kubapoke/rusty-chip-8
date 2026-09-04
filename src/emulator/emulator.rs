@@ -227,18 +227,18 @@ impl Emulator {
     }
 
     fn execute_add_command(&mut self, x: usize, y: usize) {
-        let (res, carry) = self.variables[x].carrying_add(self.variables[y], false);
+        let (res, carry) = self.variables[x].overflowing_add(self.variables[y]);
         self.variables[x] = res;
         self.variables[0xf] = carry as u8;
     }
 
     fn execute_decrement_command(&mut self, x: usize, y: usize) {
-        self.variables[0xf] = (self.variables[x] < self.variables[y]) as u8;
+        self.variables[0xf] = (self.variables[x] >= self.variables[y]) as u8;
         self.variables[x] = self.variables[x].wrapping_sub(self.variables[y]);
     }
 
     fn execute_subtract_command(&mut self, x: usize, y: usize) {
-        self.variables[0xf] = (self.variables[x] > self.variables[y]) as u8;
+        self.variables[0xf] = (self.variables[x] <= self.variables[y]) as u8;
         self.variables[x] = self.variables[y].wrapping_sub(self.variables[x]);
     }
 
@@ -512,7 +512,7 @@ mod test {
         emulator.variables[1] = 0xdd;
 
         emulator.execute_add_command(0, 1);
-        assert_eq!(emulator.variables[0x0], 0xbb);
+        assert_eq!(emulator.variables[0x0], 0xba);
         assert_eq!(emulator.variables[0x1], 0xdd);
         assert_eq!(emulator.variables[0xf], 1);
 
@@ -541,7 +541,7 @@ mod test {
         emulator.variables[1] = 0x15;
 
         emulator.execute_decrement_command(0, 1);
-        assert_eq!(emulator.variables[0x0], 0xfc);
+        assert_eq!(emulator.variables[0x0], 0xfd);
         assert_eq!(emulator.variables[0x1], 0x15);
         assert_eq!(emulator.variables[0xf], 0);
 
@@ -570,7 +570,7 @@ mod test {
         emulator.variables[1] = 0x12;
 
         emulator.execute_subtract_command(0, 1);
-        assert_eq!(emulator.variables[0x0], 0xfc);
+        assert_eq!(emulator.variables[0x0], 0xfd);
         assert_eq!(emulator.variables[0x1], 0x12);
         assert_eq!(emulator.variables[0xf], 0);
 
