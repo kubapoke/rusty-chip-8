@@ -1,5 +1,6 @@
+use std::cmp::PartialEq;
 use crate::emulator::calculations::extract_values;
-use crate::emulator::config::EmulatorConfig;
+use crate::emulator::config::{EmulatorConfig, ShiftBehaviour};
 use std::fs;
 use std::fs::File;
 use std::io::Read;
@@ -243,11 +244,19 @@ impl Emulator {
     }
 
     fn execute_shift_right_command(&mut self, x: usize, y: usize) {
-        todo!()
+        if self.config.shift_behaviour == ShiftBehaviour::CopyVY {
+            self.variables[x] = self.variables[y];
+        }
+        self.variables[0xf] = (self.variables[x] & 0b0000_0001 != 0) as u8;
+        self.variables[x] >>= 1;
     }
 
     fn execute_shift_left_command(&mut self, x: usize, y: usize) {
-        todo!()
+        if self.config.shift_behaviour == ShiftBehaviour::CopyVY {
+            self.variables[x] = self.variables[y];
+        }
+        self.variables[0xf] = (self.variables[x] & 0b1000_0000 != 0) as u8;
+        self.variables[x] <<= 1;
     }
 
     fn execute_set_index_command(&mut self, nnn: u16) {

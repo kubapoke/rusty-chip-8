@@ -19,13 +19,13 @@ impl Default for EmulatorConfig {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ShiftBehaviour {
     CopyVY,
     IgnoreVY,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum OffsetJumpBehaviour {
     AddV0,
     AddVX,
