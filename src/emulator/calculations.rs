@@ -15,28 +15,39 @@ fn get_nibble_reduced(num: &u16, index: usize) -> u16 {
     get_nibble(num, index) >> (4 * (3 - index))
 }
 
-pub fn get_code(command: &u16) -> u16 {
+fn get_code(command: &u16) -> u16 {
     get_nibble_reduced(command, 0)
 }
 
-pub fn get_x(command: &u16) -> usize {
+fn get_x(command: &u16) -> usize {
     get_nibble_reduced(command, 1) as usize
 }
 
-pub fn get_y(command: &u16) -> usize {
+fn get_y(command: &u16) -> usize {
     get_nibble_reduced(command, 2) as usize
 }
 
-pub fn get_n(command: &u16) -> u8 {
+fn get_n(command: &u16) -> u8 {
     get_nibble(command, 3) as u8
 }
 
-pub fn get_nn(command: &u16) -> u8 {
+fn get_nn(command: &u16) -> u8 {
     get_nibbles(command, 2, 3) as u8
 }
 
-pub fn get_nnn(command: &u16) -> u16 {
+fn get_nnn(command: &u16) -> u16 {
     get_nibbles(command, 1, 3)
+}
+
+pub fn extract_values(command: &u16) -> (u16, usize, usize, u8, u8, u16) {
+    (
+        get_code(command),
+        get_x(command),
+        get_y(command),
+        get_n(command),
+        get_nn(command),
+        get_nnn(command),
+    )
 }
 
 #[cfg(test)]
