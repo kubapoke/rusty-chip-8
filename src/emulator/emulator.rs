@@ -215,27 +215,31 @@ impl Emulator {
     }
 
     fn execute_or_command(&mut self, x: usize, y: usize) {
-        todo!()
+        self.variables[x] |= self.variables[y];
     }
 
     fn execute_and_command(&mut self, x: usize, y: usize) {
-        todo!()
+        self.variables[x] &= self.variables[y];
     }
 
     fn execute_xor_command(&mut self, x: usize, y: usize) {
-        todo!()
+        self.variables[x] ^= self.variables[y];
     }
 
     fn execute_add_command(&mut self, x: usize, y: usize) {
-        todo!()
+        let (res, carry) = self.variables[x].carrying_add(self.variables[y], false);
+        self.variables[x] = res;
+        self.variables[0xf] = carry as u8;
     }
 
     fn execute_decrement_command(&mut self, x: usize, y: usize) {
-        todo!()
+        self.variables[0xf] = (self.variables[x] < self.variables[y]) as u8;
+        self.variables[x] = self.variables[x].wrapping_sub(self.variables[y]);
     }
 
     fn execute_subtract_command(&mut self, x: usize, y: usize) {
-        todo!()
+        self.variables[0xf] = (self.variables[x] > self.variables[y]) as u8;
+        self.variables[x] = self.variables[y].wrapping_sub(self.variables[x]);
     }
 
     fn execute_shift_right_command(&mut self, x: usize, y: usize) {
