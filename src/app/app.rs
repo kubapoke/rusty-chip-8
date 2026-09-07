@@ -52,7 +52,7 @@ impl ApplicationHandler for App {
         let window = event_loop.create_window(window_attributes).expect("Failed creating window");
 
         let context =
-            Context::new(event_loop.owned_display_handle()).expect("failed creating context");
+            Context::new(event_loop.owned_display_handle()).expect("Failed creating context");
         let surface = Surface::new(&context, window).expect("Failed creating surface");
         self.surface = Some(surface);
     }
