@@ -1,4 +1,3 @@
-use std::cmp::PartialEq;
 use crate::emulator::calculations::extract_values;
 use crate::emulator::config::{EmulatorConfig, ShiftBehaviour};
 use std::fs;
