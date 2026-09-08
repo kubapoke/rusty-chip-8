@@ -328,11 +328,15 @@ impl Emulator {
     }
 
     fn execute_skip_if_key_pressed_command(&mut self, x: usize) {
-        todo!()
+        if(self.inputs & (1 << self.variables[x]) != 0) {
+            self.program_counter += 2;
+        }
     }
 
     fn execute_skip_if_key_not_pressed_command(&mut self, x: usize) {
-        todo!()
+        if(self.inputs & (1 << self.variables[x]) == 0) {
+            self.program_counter += 2;
+        }
     }
 }
 
@@ -853,28 +857,36 @@ mod test {
     #[test]
     fn test_skip_if_key_pressed_command() {
         let mut emulator = Emulator::default();
-        emulator.inputs = 0;
         emulator.variables[3] = 5;
+
+        emulator.inputs = 0;
         emulator.program_counter = 0x200;
 
         emulator.execute_skip_if_key_pressed_command(3);
         assert_eq!(emulator.program_counter, 0x200);
 
         emulator.inputs = 1 << 5;
+        emulator.program_counter = 0x200;
+
+        emulator.execute_skip_if_key_pressed_command(3);
         assert_eq!(emulator.program_counter, 0x202);
     }
 
     #[test]
     fn test_skip_if_key_not_pressed_command() {
         let mut emulator = Emulator::default();
-        emulator.inputs = 0;
         emulator.variables[3] = 5;
+
+        emulator.inputs = 0;
         emulator.program_counter = 0x200;
 
         emulator.execute_skip_if_key_not_pressed_command(3);
         assert_eq!(emulator.program_counter, 0x202);
 
         emulator.inputs = 1 << 5;
+        emulator.program_counter = 0x200;
+
+        emulator.execute_skip_if_key_not_pressed_command(3);
         assert_eq!(emulator.program_counter, 0x200);
     }
 }
