@@ -303,7 +303,7 @@ impl Emulator {
 
             self.display[idx] ^= sprite;
             if let Some(sender) = &self.display_sender {
-                sender.send((idx as u8, self.display[idx])).expect("Unable to send display data");
+                sender.send((idx as u8, self.display[idx])).expect("Failed to send display data");
             }
         }
     }

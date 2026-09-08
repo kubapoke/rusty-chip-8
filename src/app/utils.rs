@@ -4,6 +4,8 @@ use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
 use winit::dpi;
+use winit::event::{ElementState, KeyEvent};
+use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use winit::window::Window;
 
@@ -76,6 +78,39 @@ pub fn fill_from_display(
     }
 
     buffer.present().expect("Failed to present the softbuffer buffer");
+}
+
+pub fn get_key_event_message(event: KeyEvent) -> Option<(u8, bool)> {
+    if(event.repeat) {
+        return None
+    }
+
+    let is_pressed = match event.state {
+        ElementState::Pressed => true,
+        ElementState::Released => false,
+    };
+
+    let key: u8 = match event.physical_key {
+        PhysicalKey::Code(KeyCode::Digit1) => 0x1,
+        PhysicalKey::Code(KeyCode::Digit2) => 0x2,
+        PhysicalKey::Code(KeyCode::Digit3) => 0x3,
+        PhysicalKey::Code(KeyCode::Digit4) => 0xc,
+        PhysicalKey::Code(KeyCode::KeyQ) => 0x4,
+        PhysicalKey::Code(KeyCode::KeyW) => 0x5,
+        PhysicalKey::Code(KeyCode::KeyE) => 0x6,
+        PhysicalKey::Code(KeyCode::KeyR) => 0xd,
+        PhysicalKey::Code(KeyCode::KeyA) => 0x7,
+        PhysicalKey::Code(KeyCode::KeyS) => 0x8,
+        PhysicalKey::Code(KeyCode::KeyD) => 0x9,
+        PhysicalKey::Code(KeyCode::KeyF) => 0xe,
+        PhysicalKey::Code(KeyCode::KeyZ) => 0xa,
+        PhysicalKey::Code(KeyCode::KeyX) => 0x0,
+        PhysicalKey::Code(KeyCode::KeyC) => 0xb,
+        PhysicalKey::Code(KeyCode::KeyV) => 0xf,
+        _ => { return None },
+    };
+
+    Some((key, is_pressed))
 }
 
 const ARRAY_FALSE_COLOR: u32 = 0x0000_0000;

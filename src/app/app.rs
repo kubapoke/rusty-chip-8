@@ -1,4 +1,4 @@
-use crate::app::utils::{fill_from_display, resize, update_display_from_feed};
+use crate::app::utils::{fill_from_display, get_key_event_message, resize, update_display_from_feed};
 use crate::emulator::Emulator;
 use log::info;
 use softbuffer::{Context, Surface};
@@ -82,6 +82,11 @@ impl ApplicationHandler for App {
                 fill_from_display(surface, &self.display);
 
                 surface.window().request_redraw();
+            }
+            WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => {
+                if let Some(msg) = get_key_event_message(event) {
+                    self.input_sender.send(msg).expect("Failed to send input data");
+                }
             }
             _ => ()
         }
