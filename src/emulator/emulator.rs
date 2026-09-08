@@ -841,4 +841,32 @@ mod test {
                    ]
         );
     }
+
+    #[test]
+    fn test_jump_if_key_pressed_command() {
+        let mut emulator = Emulator::default();
+        emulator.inputs = 0;
+        emulator.variables[3] = 5;
+        emulator.program_counter = 0x200;
+
+        emulator.execute_jump_if_key_pressed_command(3);
+        assert_eq!(emulator.program_counter, 0x200);
+
+        emulator.inputs = 1 << 5;
+        assert_eq!(emulator.program_counter, 0x202);
+    }
+
+    #[test]
+    fn test_jump_if_key_not_pressed_command() {
+        let mut emulator = Emulator::default();
+        emulator.inputs = 0;
+        emulator.variables[3] = 5;
+        emulator.program_counter = 0x202;
+
+        emulator.execute_jump_if_key_not_pressed_command(3);
+        assert_eq!(emulator.program_counter, 0x200);
+
+        emulator.inputs = 1 << 5;
+        assert_eq!(emulator.program_counter, 0x200);
+    }
 }
