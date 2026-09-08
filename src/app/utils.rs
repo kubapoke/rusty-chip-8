@@ -2,6 +2,7 @@ use super::app::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
 use softbuffer::Surface;
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Receiver;
 use winit::dpi;
 use winit::raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use winit::window::Window;
@@ -50,9 +51,15 @@ fn determine_pixel_color(
     }
 }
 
+pub fn update_display_from_feed(display: &mut [u64; 32], feed: &Receiver<(u8, u64)>) {
+    while let Ok((row, value)) = feed.try_recv() {
+        display[row as usize] = value;
+    }
+}
+
 pub fn fill_from_display(
     surface: &mut Surface<impl HasDisplayHandle, impl HasWindowHandle + AsRef<dyn Window>>,
-    display: &Arc<Mutex<[u64; 32]>>,
+    display: &[u64; 32],
 ) {
     let surface_size = surface.window().as_ref().surface_size();
     resize(surface, surface_size);
@@ -61,7 +68,6 @@ pub fn fill_from_display(
     let buffer_dims = (buffer.width().get(), buffer.height().get());
     let display_dims = DISPLAY_DIMS;
 
-    let display = display.lock().unwrap();
     for (i, pixel) in buffer.iter_mut().enumerate() {
         let i = i as u32;
         let buffer_coords = (i % buffer_dims.0, i / buffer_dims.0);

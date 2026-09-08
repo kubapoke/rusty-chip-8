@@ -5,11 +5,12 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{Receiver, Sender};
 
 #[derive(Debug)]
 pub struct Emulator {
     memory: [u8; MEM_SIZE],
-    display: Arc<Mutex<[u64; 32]>>,
+    display: [u64; 32],
     program_counter: u16,
     index: u16,
     stack: Vec<u16>,
@@ -17,8 +18,9 @@ pub struct Emulator {
     sound_timer: Arc<Mutex<u8>>,
     variables: [u8; REGISTER_COUNT],
     inputs: u16,
+    display_sender: Option<Sender<(u8, u64)>>,
+    input_receiver: Option<Receiver<(u8, bool)>>,
     config: EmulatorConfig,
-    finish_requested: bool,
 }
 
 impl Emulator {
@@ -31,10 +33,13 @@ impl Emulator {
         self
     }
 
-    pub fn new() -> Self {
+    pub fn new(
+        display_sender: Option<Sender<(u8, u64)>>,
+        input_receiver: Option<Receiver<(u8, bool)>>
+    ) -> Self {
         Self {
             memory: [0; MEM_SIZE],
-            display: Arc::new(Mutex::new([0; 32])),
+            display: [0; 32],
             program_counter: 0x200,
             index: 0,
             stack: vec![],
@@ -42,8 +47,9 @@ impl Emulator {
             sound_timer: Arc::new(Mutex::new(0)),
             variables: [0; REGISTER_COUNT],
             inputs: 0,
+            display_sender,
+            input_receiver,
             config: EmulatorConfig::default(),
-            finish_requested: false,
         }
             .with_font_in_memory()
     }
@@ -58,10 +64,6 @@ impl Emulator {
         let mut buffer = vec![0; metadata.len() as usize];
         f.read_exact(&mut buffer).expect("Buffer overflow");
         self.load_program_into_memory(buffer);
-    }
-
-    pub fn get_display(&self) -> Arc<Mutex<[u64; 32]>> {
-        Arc::clone(&self.display)
     }
 
     fn get_current_command_code(&self) -> u16 {
@@ -119,7 +121,7 @@ impl Emulator {
     pub fn begin_execution(&mut self) {
         self.program_counter = INITIAL_PC_LOCATION as u16;
 
-        while !self.finish_requested {
+        loop {
             self.execute_current_command();
         }
     }
@@ -133,7 +135,7 @@ impl Emulator {
     }
 
     fn execute_clear_command(&mut self) {
-        *self.display.lock().unwrap() = [0; 32];
+        self.display = [0; 32];
     }
 
     fn execute_return_from_subroutine_command(&mut self) {
@@ -275,20 +277,23 @@ impl Emulator {
             let mut sprite = (self.get_shifted_index_value(i) as u64) << 56;
             sprite >>= vx;
 
-            if (*self.display.lock().unwrap())[idx] & sprite != 0 {
+            if self.display[idx] & sprite != 0 {
                 self.variables[0xf] = 1
             } else {
                 self.variables[0xf] = 0;
             }
 
-            (*self.display.lock().unwrap())[idx] ^= sprite;
+            self.display[idx] ^= sprite;
+            if let Some(sender) = &self.display_sender {
+                sender.send((idx as u8, self.display[idx])).expect("Unable to send display data");
+            }
         }
     }
 }
 
 impl Default for Emulator {
     fn default() -> Self {
-        Self::new()
+        Self::new(None, None)
     }
 }
 
@@ -324,30 +329,30 @@ mod test {
 
     #[test]
     fn test_current_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.memory[0x200] = 0x00;
         emulator.memory[0x201] = 0xe0;
 
-        *emulator.display.lock().unwrap() = [0xffff_ffff_ffff_ffff; 32];
+        emulator.display = [0xffff_ffff_ffff_ffff; 32];
         emulator.execute_current_command();
 
-        assert_eq!(*emulator.display.lock().unwrap(), [0x0000_0000_0000_0000; 32]);
+        assert_eq!(emulator.display, [0x0000_0000_0000_0000; 32]);
     }
 
     #[test]
     fn test_clear_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
-        *emulator.display.lock().unwrap() = [0xffff_ffff_ffff_ffff; 32];
+        emulator.display = [0xffff_ffff_ffff_ffff; 32];
         emulator.execute_clear_command();
 
-        assert_eq!(*emulator.display.lock().unwrap(), [0x0000_0000_0000_0000; 32]);
+        assert_eq!(emulator.display, [0x0000_0000_0000_0000; 32]);
     }
 
     #[test]
     fn test_subroutine_execution() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.memory[0x200..=0x201].clone_from_slice(&[0x24, 0x00]);
         emulator.memory[0x402..=0x403].clone_from_slice(&[0x00, 0xee]);
@@ -363,7 +368,7 @@ mod test {
 
     #[test]
     fn test_jump_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.execute_jump_command(0xabc);
 
@@ -372,7 +377,7 @@ mod test {
 
     #[test]
     fn test_jump_if_equal_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
         emulator.variables[0] = 1;
 
         emulator.program_counter = 0x200;
@@ -386,7 +391,7 @@ mod test {
 
     #[test]
     fn test_jump_if_not_equal_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
         emulator.variables[0] = 1;
 
         emulator.program_counter = 0x200;
@@ -400,7 +405,7 @@ mod test {
 
     #[test]
     fn test_jump_if_registers_equal_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
         emulator.variables[0] = 0;
         emulator.variables[1] = 0;
 
@@ -418,7 +423,7 @@ mod test {
 
     #[test]
     fn test_jump_if_registers_not_equal_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
         emulator.variables[0] = 0;
         emulator.variables[1] = 0;
 
@@ -436,7 +441,7 @@ mod test {
 
     #[test]
     fn text_execute_set_register_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.execute_set_register_command(0xa, 0xbc);
         assert_eq!(emulator.variables[0xa], 0xbc);
@@ -444,7 +449,7 @@ mod test {
 
     #[test]
     fn test_add_to_register_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
         assert_eq!(emulator.variables[0xa], 0x00);
 
         emulator.execute_add_to_register_command(0xa, 0xbc);
@@ -459,7 +464,7 @@ mod test {
 
     #[test]
     fn test_assign_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.variables[0] = 0;
         emulator.variables[1] = 1;
@@ -471,7 +476,7 @@ mod test {
 
     #[test]
     fn test_or_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.variables[0] = 0b1010_0000;
         emulator.variables[1] = 0b0101_0000;
@@ -483,7 +488,7 @@ mod test {
 
     #[test]
     fn test_and_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.variables[0] = 0b1010_0000;
         emulator.variables[1] = 0b1101_0000;
@@ -495,7 +500,7 @@ mod test {
 
     #[test]
     fn test_xor_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.variables[0] = 0b1010_0000;
         emulator.variables[1] = 0b1101_0000;
@@ -506,7 +511,7 @@ mod test {
 
     #[test]
     fn test_add_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.variables[0] = 0x12;
         emulator.variables[1] = 0x15;
@@ -535,7 +540,7 @@ mod test {
 
     #[test]
     fn test_decrement_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.variables[0] = 0x15;
         emulator.variables[1] = 0x12;
@@ -564,7 +569,7 @@ mod test {
 
     #[test]
     fn test_subtract_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.variables[0] = 0x12;
         emulator.variables[1] = 0x15;
@@ -593,7 +598,7 @@ mod test {
 
     #[test]
     fn test_shift_right_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
         emulator.config.shift_behaviour = ShiftBehaviour::CopyVY;
 
         emulator.variables[0] = 0b1100_1100;
@@ -633,7 +638,7 @@ mod test {
 
     #[test]
     fn test_shift_left_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
         emulator.config.shift_behaviour = ShiftBehaviour::CopyVY;
 
         emulator.variables[0] = 0b1100_1100;
@@ -673,7 +678,7 @@ mod test {
 
     #[test]
     fn test_set_index_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.execute_set_index_command(0xabc);
         assert_eq!(emulator.index, 0xabc);
@@ -681,7 +686,7 @@ mod test {
 
     #[test]
     fn test_draw_command() {
-        let mut emulator = Emulator::new();
+        let mut emulator = Emulator::default();
 
         emulator.execute_set_index_command(0x200);
         emulator.memory[0x0200..0x0208].clone_from_slice(&[0b1111_1111; 8]);
@@ -692,7 +697,7 @@ mod test {
         emulator.execute_draw_command(6, 7, 8);
 
         assert_eq!(emulator.variables[0xf], 0);
-        assert_eq!(*emulator.display.lock().unwrap(),
+        assert_eq!(emulator.display,
                    [
                        0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000,
                        0b0011_1111_1100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000,
@@ -732,7 +737,7 @@ mod test {
         emulator.execute_draw_command(6, 7, 8);
 
         assert_eq!(emulator.variables[0xf], 1);
-        assert_eq!(*emulator.display.lock().unwrap(),
+        assert_eq!(emulator.display,
                    [
                        0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000,
                        0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000,
