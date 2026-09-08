@@ -1,4 +1,4 @@
-use crate::emulator::calculations::extract_values;
+use crate::emulator::calculations::{extract_values, get_code};
 use crate::emulator::config::{EmulatorConfig, OffsetJumpBehaviour, ShiftBehaviour};
 use std::fs;
 use std::fs::File;
@@ -116,8 +116,8 @@ impl Emulator {
 
         self.execute_command(&command);
 
-        let code = command & 0xf000;
-        if code != 0x1000 && code != 0x2000 {
+        let code = get_code(&command);
+        if code != 0x1 && code != 0x2 {
             self.program_counter += PROGRAM_COUNTER_MOVE;
         }
     }
@@ -127,6 +127,7 @@ impl Emulator {
 
         loop {
             self.execute_current_command();
+            self.process_key_events();
         }
     }
 
@@ -305,6 +306,25 @@ impl Emulator {
                 sender.send((idx as u8, self.display[idx])).expect("Unable to send display data");
             }
         }
+    }
+
+    fn process_key_events(&mut self) {
+        if let Some(receiver) = &self.input_receiver {
+            while let Ok((key, pressed)) = receiver.try_recv() {
+                match pressed {
+                    true => { self.inputs |= 1 << key }
+                    false => { self.inputs &= !(1 << key) }
+                }
+            }
+        }
+    }
+
+    fn execute_jump_if_key_pressed_command(&mut self, x: usize) {
+        todo!()
+    }
+
+    fn execute_jump_if_key_not_pressed_command(&mut self, x: usize) {
+        todo!()
     }
 }
 
