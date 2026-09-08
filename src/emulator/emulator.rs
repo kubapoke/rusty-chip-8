@@ -1,11 +1,13 @@
 use crate::emulator::calculations::extract_values;
-use crate::emulator::config::{EmulatorConfig, ShiftBehaviour};
+use crate::emulator::config::{EmulatorConfig, OffsetJumpBehaviour, ShiftBehaviour};
 use std::fs;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Receiver, Sender};
+use rand::prelude::SmallRng;
+use rand::RngExt;
 
 #[derive(Debug)]
 pub struct Emulator {
@@ -20,6 +22,7 @@ pub struct Emulator {
     inputs: u16,
     display_sender: Option<Sender<(u8, u64)>>,
     input_receiver: Option<Receiver<(u8, bool)>>,
+    rng: SmallRng,
     config: EmulatorConfig,
 }
 
@@ -49,6 +52,7 @@ impl Emulator {
             inputs: 0,
             display_sender,
             input_receiver,
+            rng: rand::make_rng(),
             config: EmulatorConfig::default(),
         }
             .with_font_in_memory()
@@ -265,11 +269,16 @@ impl Emulator {
     }
 
     fn execute_jump_with_offset_command(&mut self, x: usize, nnn: u16) {
-        todo!()
+        self.program_counter = if self.config.offset_jump_behaviour == OffsetJumpBehaviour::AddV0 {
+            nnn + self.variables[0] as u16
+        } else {
+            nnn + self.variables[x] as u16
+        }
     }
 
     fn execute_random_command(&mut self, x: usize, nn: u8) {
-        todo!()
+        let random: u8 = self.rng.random();
+        self.variables[x] = nn & random;
     }
 
     fn execute_draw_command(&mut self, x: usize, y: usize, n: u8) {
@@ -332,8 +341,6 @@ const FONT: [u8; 80] = [
 
 #[cfg(test)]
 mod test {
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
     use super::*;
     use crate::emulator::config::{OffsetJumpBehaviour, ShiftBehaviour};
 
@@ -703,14 +710,14 @@ mod test {
         emulator.config.offset_jump_behaviour = OffsetJumpBehaviour::AddV0;
 
         emulator.program_counter = 0x123;
-        emulator.execute_jump_with_offset_command(1, 100);
-        assert_eq!(emulator.program_counter, 101);
+        emulator.execute_jump_with_offset_command(1, 0x100);
+        assert_eq!(emulator.program_counter, 0x101);
 
         emulator.config.offset_jump_behaviour = OffsetJumpBehaviour::AddVX;
 
         emulator.program_counter = 0x123;
-        emulator.execute_jump_with_offset_command(1, 100);
-        assert_eq!(emulator.program_counter, 302);
+        emulator.execute_jump_with_offset_command(1, 0x100);
+        assert_eq!(emulator.program_counter, 0x102);
     }
 
     #[test]
