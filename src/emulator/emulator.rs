@@ -105,7 +105,7 @@ impl Emulator {
             0xb => self.execute_jump_with_offset_command(x, nnn),
             0xc => self.execute_random_command(x, nn),
             0xd => self.execute_draw_command(x, y, n),
-            0xe => todo!(),
+            0xe => self.execute_skip_if_key_commands(x, nn),
             0xf => todo!(),
             _ => panic!("Invalid command"),
         };
@@ -316,6 +316,14 @@ impl Emulator {
                     false => { self.inputs &= !(1 << key) }
                 }
             }
+        }
+    }
+
+    fn execute_skip_if_key_commands(&mut self, x: usize, nn: u8) {
+        match nn {
+            0x9e => self.execute_skip_if_key_pressed_command(x),
+            0xa1 => self.execute_skip_if_key_not_pressed_command(x),
+            _ => panic!("Invalid command"),
         }
     }
 
