@@ -338,6 +338,57 @@ impl Emulator {
             self.program_counter += 2;
         }
     }
+
+    fn execute_f_command(&mut self, x: usize, nn: u8) {
+        match nn {
+            0x07 => self.execute_get_delay_timer_command(x),
+            0x15 => self.execute_set_delay_timer_command(x),
+            0x18 => self.execute_set_sound_timer_command(x),
+            0x1e => self.execute_add_to_index_command(x),
+            0x0a => self.execute_get_key_command(x),
+            0x29 => self.execute_get_font_character_command(x),
+            0x33 => self.execute_binary_coded_decimal_command(x),
+            0x55 => self.execute_store_memory_command(x),
+            0x65 => self.execute_load_memory_command(x),
+            _ => panic!("Invalid command"),
+        }
+    }
+
+    fn execute_get_delay_timer_command(&mut self, x: usize) {
+        todo!()
+    }
+
+    fn execute_set_delay_timer_command(&mut self, x: usize) {
+        todo!()
+    }
+
+    fn execute_set_sound_timer_command(&mut self, x: usize) {
+        todo!()
+    }
+
+    fn execute_add_to_index_command(&mut self, x: usize) {
+        todo!()
+    }
+
+    fn execute_get_key_command(&mut self, x: usize) {
+        todo!()
+    }
+
+    fn execute_get_font_character_command(&mut self, x: usize) {
+        todo!()
+    }
+
+    fn execute_binary_coded_decimal_command(&mut self, x: usize) {
+        todo!()
+    }
+
+    fn execute_store_memory_command(&mut self, x: usize) {
+        todo!()
+    }
+
+    fn execute_load_memory_command(&mut self, x: usize) {
+        todo!()
+    }
 }
 
 impl Default for Emulator {
