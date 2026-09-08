@@ -94,13 +94,13 @@ impl Emulator {
             0x0 => self.execute_0_command(command),
             0x1 => self.execute_jump_command(nnn),
             0x2 => self.execute_call_subroutine_command(nnn),
-            0x3 => self.execute_jump_if_equal_command(x, nn),
-            0x4 => self.execute_jump_if_not_equal_command(x, nn),
+            0x3 => self.execute_skip_if_equal_command(x, nn),
+            0x4 => self.execute_skip_if_not_equal_command(x, nn),
             0x5 => self.execute_jump_if_registers_equal_command(x, y),
             0x6 => self.execute_set_register_command(x, nn),
-            0x7 => self.execute_add_to_register_command(x, nn),
+            0x7 => self.execute_add_constant_command(x, nn),
             0x8 => self.execute_math_command(x, y, n),
-            0x9 => self.execute_jump_if_registers_not_equal_command(x, y),
+            0x9 => self.execute_skip_if_registers_not_equal_command(x, y),
             0xa => self.execute_set_index_command(nnn),
             0xb => self.execute_jump_with_offset_command(x, nnn),
             0xc => self.execute_random_command(x, nn),
@@ -158,7 +158,7 @@ impl Emulator {
         self.program_counter = address;
     }
 
-    fn execute_jump_if_equal_command(&mut self, x: usize, nn: u8) {
+    fn execute_skip_if_equal_command(&mut self, x: usize, nn: u8) {
         let lhs = self.variables[x];
         let rhs = nn;
 
@@ -167,7 +167,7 @@ impl Emulator {
         }
     }
 
-    fn execute_jump_if_not_equal_command(&mut self, x: usize, nn: u8) {
+    fn execute_skip_if_not_equal_command(&mut self, x: usize, nn: u8) {
         let lhs = self.variables[x];
         let rhs = nn;
 
@@ -185,7 +185,7 @@ impl Emulator {
         }
     }
 
-    fn execute_jump_if_registers_not_equal_command(&mut self, x: usize, y: usize) {
+    fn execute_skip_if_registers_not_equal_command(&mut self, x: usize, y: usize) {
         let lhs = self.variables[x];
         let rhs = self.variables[y];
 
@@ -198,7 +198,7 @@ impl Emulator {
         self.variables[x] = nn;
     }
 
-    fn execute_add_to_register_command(&mut self, x: usize, nn: u8) {
+    fn execute_add_constant_command(&mut self, x: usize, nn: u8) {
         self.variables[x] = self.variables[x].wrapping_add(nn);
     }
 
@@ -209,9 +209,9 @@ impl Emulator {
             0x2 => self.execute_and_command(x, y),
             0x3 => self.execute_xor_command(x, y),
             0x4 => self.execute_add_command(x, y),
-            0x5 => self.execute_decrement_command(x, y),
+            0x5 => self.execute_subtract_command(x, y),
             0x6 => self.execute_shift_right_command(x, y),
-            0x7 => self.execute_subtract_command(x, y),
+            0x7 => self.execute_replace_and_subtract_command(x, y),
             0xe => self.execute_shift_left_command(x, y),
             _ => panic!("Invalid command"),
         }
@@ -239,12 +239,12 @@ impl Emulator {
         self.variables[0xf] = carry as u8;
     }
 
-    fn execute_decrement_command(&mut self, x: usize, y: usize) {
+    fn execute_subtract_command(&mut self, x: usize, y: usize) {
         self.variables[0xf] = (self.variables[x] >= self.variables[y]) as u8;
         self.variables[x] = self.variables[x].wrapping_sub(self.variables[y]);
     }
 
-    fn execute_subtract_command(&mut self, x: usize, y: usize) {
+    fn execute_replace_and_subtract_command(&mut self, x: usize, y: usize) {
         self.variables[0xf] = (self.variables[x] <= self.variables[y]) as u8;
         self.variables[x] = self.variables[y].wrapping_sub(self.variables[x]);
     }
@@ -319,11 +319,11 @@ impl Emulator {
         }
     }
 
-    fn execute_jump_if_key_pressed_command(&mut self, x: usize) {
+    fn execute_skip_if_key_pressed_command(&mut self, x: usize) {
         todo!()
     }
 
-    fn execute_jump_if_key_not_pressed_command(&mut self, x: usize) {
+    fn execute_skip_if_key_not_pressed_command(&mut self, x: usize) {
         todo!()
     }
 }
@@ -413,30 +413,30 @@ mod test {
     }
 
     #[test]
-    fn test_jump_if_equal_command() {
+    fn test_skip_if_equal_command() {
         let mut emulator = Emulator::default();
         emulator.variables[0] = 1;
 
         emulator.program_counter = 0x200;
-        emulator.execute_jump_if_equal_command(0, 0);
+        emulator.execute_skip_if_equal_command(0, 0);
         assert_eq!(emulator.program_counter, 0x200);
 
         emulator.program_counter = 0x200;
-        emulator.execute_jump_if_equal_command(0, 1);
+        emulator.execute_skip_if_equal_command(0, 1);
         assert_eq!(emulator.program_counter, 0x202);
     }
 
     #[test]
-    fn test_jump_if_not_equal_command() {
+    fn test_skip_if_not_equal_command() {
         let mut emulator = Emulator::default();
         emulator.variables[0] = 1;
 
         emulator.program_counter = 0x200;
-        emulator.execute_jump_if_not_equal_command(0, 0);
+        emulator.execute_skip_if_not_equal_command(0, 0);
         assert_eq!(emulator.program_counter, 0x202);
 
         emulator.program_counter = 0x200;
-        emulator.execute_jump_if_not_equal_command(0, 1);
+        emulator.execute_skip_if_not_equal_command(0, 1);
         assert_eq!(emulator.program_counter, 0x200);
     }
 
@@ -459,20 +459,20 @@ mod test {
     }
 
     #[test]
-    fn test_jump_if_registers_not_equal_command() {
+    fn test_skip_if_registers_not_equal_command() {
         let mut emulator = Emulator::default();
         emulator.variables[0] = 0;
         emulator.variables[1] = 0;
 
         emulator.program_counter = 0x200;
-        emulator.execute_jump_if_registers_not_equal_command(0, 1);
+        emulator.execute_skip_if_registers_not_equal_command(0, 1);
         assert_eq!(emulator.program_counter, 0x200);
 
         emulator.variables[0] = 0;
         emulator.variables[1] = 1;
 
         emulator.program_counter = 0x200;
-        emulator.execute_jump_if_registers_not_equal_command(0, 1);
+        emulator.execute_skip_if_registers_not_equal_command(0, 1);
         assert_eq!(emulator.program_counter, 0x202);
     }
 
@@ -485,17 +485,17 @@ mod test {
     }
 
     #[test]
-    fn test_add_to_register_command() {
+    fn test_add_constant_command() {
         let mut emulator = Emulator::default();
         assert_eq!(emulator.variables[0xa], 0x00);
 
-        emulator.execute_add_to_register_command(0xa, 0xbc);
+        emulator.execute_add_constant_command(0xa, 0xbc);
         assert_eq!(emulator.variables[0xa], 0xbc);
 
-        emulator.execute_add_to_register_command(0xa, 0x01);
+        emulator.execute_add_constant_command(0xa, 0x01);
         assert_eq!(emulator.variables[0xa], 0xbd);
 
-        emulator.execute_add_to_register_command(0xa, 0xbc);
+        emulator.execute_add_constant_command(0xa, 0xbc);
         assert_eq!(emulator.variables[0xa], 0x79);
     }
 
@@ -576,13 +576,13 @@ mod test {
     }
 
     #[test]
-    fn test_decrement_command() {
+    fn test_subtract_command() {
         let mut emulator = Emulator::default();
 
         emulator.variables[0] = 0x15;
         emulator.variables[1] = 0x12;
 
-        emulator.execute_decrement_command(0, 1);
+        emulator.execute_subtract_command(0, 1);
         assert_eq!(emulator.variables[0x0], 0x03);
         assert_eq!(emulator.variables[0x1], 0x12);
         assert_eq!(emulator.variables[0xf], 1);
@@ -590,7 +590,7 @@ mod test {
         emulator.variables[0] = 0x12;
         emulator.variables[1] = 0x15;
 
-        emulator.execute_decrement_command(0, 1);
+        emulator.execute_subtract_command(0, 1);
         assert_eq!(emulator.variables[0x0], 0xfd);
         assert_eq!(emulator.variables[0x1], 0x15);
         assert_eq!(emulator.variables[0xf], 0);
@@ -598,20 +598,20 @@ mod test {
         emulator.variables[0] = 0xff;
         emulator.variables[1] = 0xff;
 
-        emulator.execute_decrement_command(0, 1);
+        emulator.execute_subtract_command(0, 1);
         assert_eq!(emulator.variables[0x0], 0x0);
         assert_eq!(emulator.variables[0x1], 0xff);
         assert_eq!(emulator.variables[0xf], 1);
     }
 
     #[test]
-    fn test_subtract_command() {
+    fn test_replace_and_subtract_command() {
         let mut emulator = Emulator::default();
 
         emulator.variables[0] = 0x12;
         emulator.variables[1] = 0x15;
 
-        emulator.execute_subtract_command(0, 1);
+        emulator.execute_replace_and_subtract_command(0, 1);
         assert_eq!(emulator.variables[0x0], 0x03);
         assert_eq!(emulator.variables[0x1], 0x15);
         assert_eq!(emulator.variables[0xf], 1);
@@ -619,7 +619,7 @@ mod test {
         emulator.variables[0] = 0x15;
         emulator.variables[1] = 0x12;
 
-        emulator.execute_subtract_command(0, 1);
+        emulator.execute_replace_and_subtract_command(0, 1);
         assert_eq!(emulator.variables[0x0], 0xfd);
         assert_eq!(emulator.variables[0x1], 0x12);
         assert_eq!(emulator.variables[0xf], 0);
@@ -627,7 +627,7 @@ mod test {
         emulator.variables[0] = 0xff;
         emulator.variables[1] = 0xff;
 
-        emulator.execute_subtract_command(0, 1);
+        emulator.execute_replace_and_subtract_command(0, 1);
         assert_eq!(emulator.variables[0x0], 0x0);
         assert_eq!(emulator.variables[0x1], 0xff);
         assert_eq!(emulator.variables[0xf], 1);
@@ -843,13 +843,13 @@ mod test {
     }
 
     #[test]
-    fn test_jump_if_key_pressed_command() {
+    fn test_skip_if_key_pressed_command() {
         let mut emulator = Emulator::default();
         emulator.inputs = 0;
         emulator.variables[3] = 5;
         emulator.program_counter = 0x200;
 
-        emulator.execute_jump_if_key_pressed_command(3);
+        emulator.execute_skip_if_key_pressed_command(3);
         assert_eq!(emulator.program_counter, 0x200);
 
         emulator.inputs = 1 << 5;
@@ -857,14 +857,14 @@ mod test {
     }
 
     #[test]
-    fn test_jump_if_key_not_pressed_command() {
+    fn test_skip_if_key_not_pressed_command() {
         let mut emulator = Emulator::default();
         emulator.inputs = 0;
         emulator.variables[3] = 5;
-        emulator.program_counter = 0x202;
+        emulator.program_counter = 0x200;
 
-        emulator.execute_jump_if_key_not_pressed_command(3);
-        assert_eq!(emulator.program_counter, 0x200);
+        emulator.execute_skip_if_key_not_pressed_command(3);
+        assert_eq!(emulator.program_counter, 0x202);
 
         emulator.inputs = 1 << 5;
         assert_eq!(emulator.program_counter, 0x200);
