@@ -98,8 +98,8 @@ impl Emulator {
             0x8 => self.execute_math_command(x, y, n),
             0x9 => self.execute_jump_if_registers_not_equal_command(x, y),
             0xa => self.execute_set_index_command(nnn),
-            0xb => todo!(),
-            0xc => todo!(),
+            0xb => self.execute_jump_with_offset_command(x, nnn),
+            0xc => self.execute_random_command(x, nn),
             0xd => self.execute_draw_command(x, y, n),
             0xe => todo!(),
             0xf => todo!(),
@@ -264,6 +264,14 @@ impl Emulator {
         self.index = nnn;
     }
 
+    fn execute_jump_with_offset_command(&mut self, x: usize, nnn: u16) {
+        todo!()
+    }
+
+    fn execute_random_command(&mut self, x: usize, nn: u8) {
+        todo!()
+    }
+
     fn execute_draw_command(&mut self, x: usize, y: usize, n: u8) {
         let vx = self.variables[x] & (DISPLAY_WIDTH - 1) as u8;
         let vy = self.variables[y] & (DISPLAY_HEIGHT - 1) as u8;
@@ -324,8 +332,10 @@ const FONT: [u8; 80] = [
 
 #[cfg(test)]
 mod test {
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
     use super::*;
-    use crate::emulator::config::ShiftBehaviour;
+    use crate::emulator::config::{OffsetJumpBehaviour, ShiftBehaviour};
 
     #[test]
     fn test_current_command() {
@@ -682,6 +692,36 @@ mod test {
 
         emulator.execute_set_index_command(0xabc);
         assert_eq!(emulator.index, 0xabc);
+    }
+
+    #[test]
+    fn test_jump_with_offset_command() {
+        let mut emulator = Emulator::default();
+        emulator.variables[0] = 0x001;
+        emulator.variables[1] = 0x002;
+
+        emulator.config.offset_jump_behaviour = OffsetJumpBehaviour::AddV0;
+
+        emulator.program_counter = 0x123;
+        emulator.execute_jump_with_offset_command(1, 100);
+        assert_eq!(emulator.program_counter, 101);
+
+        emulator.config.offset_jump_behaviour = OffsetJumpBehaviour::AddVX;
+
+        emulator.program_counter = 0x123;
+        emulator.execute_jump_with_offset_command(1, 100);
+        assert_eq!(emulator.program_counter, 302);
+    }
+
+    #[test]
+    fn test_random_command() {
+        let mut emulator = Emulator::default();
+        let nn = 0b1001_0110;
+
+        for _ in 0..100 {
+            emulator.execute_random_command(0, nn);
+            assert_eq!(emulator.variables[0] & nn, emulator.variables[0]);
+        }
     }
 
     #[test]
