@@ -125,7 +125,7 @@ impl Emulator {
             0xc => self.execute_random_command(x, nn),
             0xd => self.execute_draw_command(x, y, n),
             0xe => self.execute_skip_if_key_commands(x, nn),
-            0xf => todo!(),
+            0xf => self.execute_f_command(x, nn),
             _ => panic!("Invalid command"),
         };
     }
