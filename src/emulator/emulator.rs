@@ -1,6 +1,6 @@
 use crate::emulator::calculations::{extract_values, get_code};
 use crate::emulator::config::{EmulatorConfig, OffsetJumpBehaviour, ShiftBehaviour};
-use std::fs;
+use std::{fs, thread};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Receiver, Sender};
 use rand::prelude::SmallRng;
 use rand::RngExt;
+use crate::emulator::timers::{delay_timer_work, sound_timer_work};
 
 #[derive(Debug)]
 pub struct Emulator {
@@ -27,15 +28,6 @@ pub struct Emulator {
 }
 
 impl Emulator {
-    fn place_font_in_memory(&mut self) {
-        self.memory[0x050..0x0a0].clone_from_slice(&FONT);
-    }
-
-    fn with_font_in_memory(mut self) -> Self {
-        self.place_font_in_memory();
-        self
-    }
-
     pub fn new(
         display_sender: Option<Sender<(u8, u64)>>,
         input_receiver: Option<Receiver<(u8, bool)>>
@@ -56,6 +48,7 @@ impl Emulator {
             config: EmulatorConfig::default(),
         }
             .with_font_in_memory()
+            .with_timers_initialized()
     }
 
     fn load_program_into_memory(&mut self, buffer: Vec<u8>) {
@@ -68,6 +61,32 @@ impl Emulator {
         let mut buffer = vec![0; metadata.len() as usize];
         f.read_exact(&mut buffer).expect("Buffer overflow");
         self.load_program_into_memory(buffer);
+    }
+
+    fn place_font_in_memory(&mut self) {
+        self.memory[0x050..0x0a0].clone_from_slice(&FONT);
+    }
+
+    fn with_font_in_memory(mut self) -> Self {
+        self.place_font_in_memory();
+        self
+    }
+
+    fn initialize_timers(&mut self) {
+        let timer = Arc::clone(&self.delay_timer);
+        _ = thread::spawn(|| {
+            delay_timer_work(timer);
+        });
+
+        let timer = Arc::clone(&self.sound_timer);
+        _ = thread::spawn(|| {
+            sound_timer_work(timer);
+        });
+    }
+
+    fn with_timers_initialized(mut self) -> Self {
+        self.initialize_timers();
+        self
     }
 
     fn get_current_command_code(&self) -> u16 {
