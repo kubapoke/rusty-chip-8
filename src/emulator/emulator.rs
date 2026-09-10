@@ -374,8 +374,8 @@ impl Emulator {
             0x0a => self.execute_get_key_command(x),
             0x29 => self.execute_get_font_character_command(x),
             0x33 => self.execute_binary_coded_decimal_command(x),
-            0x55 => self.execute_store_memory_command(x),
-            0x65 => self.execute_load_memory_command(x),
+            0x55 => self.execute_store_registers_in_memory_command(x),
+            0x65 => self.execute_load_registers_from_memory_command(x),
             _ => panic!("Invalid command"),
         }
     }
@@ -433,12 +433,14 @@ impl Emulator {
         self.memory[self.index as usize + 2] = num % 10;
     }
 
-    fn execute_store_memory_command(&mut self, x: usize) {
-        todo!()
+    fn execute_store_registers_in_memory_command(&mut self, x: usize) {
+        let index = self.index as usize;
+        self.memory[index..=index + x].clone_from_slice(&self.variables[..=x]);
     }
 
-    fn execute_load_memory_command(&mut self, x: usize) {
-        todo!()
+    fn execute_load_registers_from_memory_command(&mut self, x: usize) {
+        let index = self.index as usize;
+        self.variables[..=x].clone_from_slice(&self.memory[index..=index + x]);
     }
 }
 
