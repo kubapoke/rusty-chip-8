@@ -1,5 +1,5 @@
 use crate::emulator::calculations::{extract_values, get_code};
-use crate::emulator::config::{AddToIndexBehaviour, EmulatorConfig, OffsetJumpBehaviour, ShiftBehaviour};
+use crate::emulator::config::{AddToIndexBehaviour, EmulatorConfig, MemoryOperationBehaviour, OffsetJumpBehaviour, ShiftBehaviour};
 use std::{fs, thread};
 use std::fs::File;
 use std::io::Read;
@@ -441,11 +441,19 @@ impl Emulator {
     fn execute_store_registers_in_memory_command(&mut self, x: usize) {
         let index = self.index as usize;
         self.memory[index..=index + x].clone_from_slice(&self.variables[..=x]);
+
+        if(self.config.memory_operation_behaviour == MemoryOperationBehaviour::MoveIndex) {
+            self.index += x as u16 + 1;
+        }
     }
 
     fn execute_load_registers_from_memory_command(&mut self, x: usize) {
         let index = self.index as usize;
         self.variables[..=x].clone_from_slice(&self.memory[index..=index + x]);
+
+        if(self.config.memory_operation_behaviour == MemoryOperationBehaviour::MoveIndex) {
+            self.index += x as u16 + 1;
+        }
     }
 }
 
@@ -486,7 +494,7 @@ const FONT_END: usize = 0x0a0;
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::emulator::config::{OffsetJumpBehaviour, ShiftBehaviour};
+    use crate::emulator::config::{MemoryOperationBehaviour, OffsetJumpBehaviour, ShiftBehaviour};
 
     #[test]
     fn test_current_command() {
@@ -1050,5 +1058,50 @@ mod test {
         assert_eq!(emulator.memory[0x200], 2);
         assert_eq!(emulator.memory[0x201], 5);
         assert_eq!(emulator.memory[0x202], 5);
+    }
+
+    #[test]
+    fn test_memory_commands() {
+        let mut emulator = Emulator::default();
+        let growing_array: [u8; REGISTER_COUNT] = core::array::from_fn(|i| i as u8 + 1);
+        let zero_array = [0u8; REGISTER_COUNT];
+
+        emulator.config.memory_operation_behaviour = MemoryOperationBehaviour::DontMoveIndex;
+        emulator.index = 0x200;
+        emulator.variables = growing_array;
+
+        emulator.execute_store_registers_in_memory_command(0x9);
+        assert_eq!(emulator.memory[0x200..=0x209], growing_array[..=0x9]);
+        assert_eq!(emulator.memory[0x20a..=0x20f], zero_array[0xa..=0xf]);
+        assert_eq!(emulator.index, 0x200);
+
+        emulator.index = 0x200;
+        emulator.variables = zero_array;
+        emulator.memory[0x200..=0x20f].copy_from_slice(&growing_array);
+
+        emulator.execute_load_registers_from_memory_command(0x9);
+        assert_eq!(emulator.variables[0x0..=0x9], growing_array[..=0x9]);
+        assert_eq!(emulator.variables[0xa..=0xf], zero_array[0xa..=0xf]);
+        assert_eq!(emulator.index, 0x200);
+
+        emulator.memory[0x200..=0x20f].copy_from_slice(&zero_array);
+
+        emulator.config.memory_operation_behaviour = MemoryOperationBehaviour::MoveIndex;
+        emulator.index = 0x200;
+        emulator.variables = growing_array;
+
+        emulator.execute_store_registers_in_memory_command(0x9);
+        assert_eq!(emulator.memory[0x200..=0x209], growing_array[..=0x9]);
+        assert_eq!(emulator.memory[0x20a..=0x20f], zero_array[0xa..=0xf]);
+        assert_eq!(emulator.index, 0x20a);
+
+        emulator.index = 0x200;
+        emulator.variables = zero_array;
+        emulator.memory[0x200..=0x20f].copy_from_slice(&growing_array);
+
+        emulator.execute_load_registers_from_memory_command(0x9);
+        assert_eq!(emulator.variables[0x0..=0x9], growing_array[..=0x9]);
+        assert_eq!(emulator.variables[0xa..=0xf], zero_array[0xa..=0xf]);
+        assert_eq!(emulator.index, 0x20a);
     }
 }
