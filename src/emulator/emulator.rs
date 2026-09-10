@@ -427,7 +427,10 @@ impl Emulator {
     }
 
     fn execute_binary_coded_decimal_command(&mut self, x: usize) {
-        todo!()
+        let num = self.variables[x];
+        self.memory[self.index as usize] = num / 100;
+        self.memory[self.index as usize + 1] = (num % 100) / 10;
+        self.memory[self.index as usize + 2] = num % 10;
     }
 
     fn execute_store_memory_command(&mut self, x: usize) {
@@ -1026,5 +1029,19 @@ mod test {
         emulator.execute_add_to_index_command(0x1);
         assert_eq!(emulator.index, 0x10ef);
         assert_eq!(emulator.variables[0xf], 0x0);
+    }
+
+    #[test]
+    fn test_binary_coded_decimal_command() {
+        let mut emulator = Emulator::default();
+
+        emulator.index = 0x200;
+        emulator.variables[0] = 255;
+
+        emulator.execute_binary_coded_decimal_command(0);
+
+        assert_eq!(emulator.memory[0x200], 2);
+        assert_eq!(emulator.memory[0x201], 5);
+        assert_eq!(emulator.memory[0x202], 5);
     }
 }
