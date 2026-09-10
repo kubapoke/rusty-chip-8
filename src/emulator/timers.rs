@@ -17,7 +17,7 @@ pub fn delay_timer_work(delay_timer: Arc<Mutex<u8>>) {
 
 pub fn sound_timer_work(sound_timer: Arc<Mutex<u8>>) {
     let handle = rodio::DeviceSinkBuilder::open_default_sink().expect("Unable to open audio stream");
-    let player = rodio::Player::connect_new(&handle.mixer());
+    let player = rodio::Player::connect_new(handle.mixer());
     let source = SineWave::new(SOUND_FREQUENCY);
     player.append(source);
 

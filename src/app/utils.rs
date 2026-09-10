@@ -1,7 +1,6 @@
 use super::app::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
 use softbuffer::Surface;
 use std::num::NonZeroU32;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
 use winit::dpi;
 use winit::event::{ElementState, KeyEvent};
@@ -81,7 +80,7 @@ pub fn fill_from_display(
 }
 
 pub fn get_key_event_message(event: KeyEvent) -> Option<(u8, bool)> {
-    if(event.repeat) {
+    if event.repeat {
         return None
     }
 

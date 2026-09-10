@@ -105,9 +105,6 @@ impl Emulator {
     }
 
     fn execute_command(&mut self, command: &u16) {
-        let pc = self.program_counter;
-        let id = self.index;
-
         let (code, x, y, n, nn, nnn) = extract_values(command);
 
         match code {
@@ -193,7 +190,7 @@ impl Emulator {
         let lhs = self.variables[x];
         let rhs = nn;
 
-        if (lhs == rhs) {
+        if lhs == rhs {
             self.program_counter += 2;
         }
     }
@@ -202,7 +199,7 @@ impl Emulator {
         let lhs = self.variables[x];
         let rhs = nn;
 
-        if (lhs != rhs) {
+        if lhs != rhs {
             self.program_counter += 2;
         }
     }
@@ -211,7 +208,7 @@ impl Emulator {
         let lhs = self.variables[x];
         let rhs = self.variables[y];
 
-        if (lhs == rhs) {
+        if lhs == rhs {
             self.program_counter += 2;
         }
     }
@@ -220,7 +217,7 @@ impl Emulator {
         let lhs = self.variables[x];
         let rhs = self.variables[y];
 
-        if (lhs != rhs) {
+        if lhs != rhs {
             self.program_counter += 2;
         }
     }
@@ -359,13 +356,13 @@ impl Emulator {
     }
 
     fn execute_skip_if_key_pressed_command(&mut self, x: usize) {
-        if(self.inputs & (1 << self.variables[x]) != 0) {
+        if self.inputs & (1 << self.variables[x]) != 0 {
             self.program_counter += 2;
         }
     }
 
     fn execute_skip_if_key_not_pressed_command(&mut self, x: usize) {
-        if(self.inputs & (1 << self.variables[x]) == 0) {
+        if self.inputs & (1 << self.variables[x]) == 0 {
             self.program_counter += 2;
         }
     }
@@ -410,17 +407,16 @@ impl Emulator {
 
     fn execute_get_key_command(&mut self, x: usize) {
         loop {
-            if let Some(receiver) = &self.input_receiver {
-                if let Ok((key, pressed)) = receiver.recv() {
-                    match pressed {
-                        true => { self.inputs |= 1 << key }
-                        false => { self.inputs &= !(1 << key) }
-                    }
+            if let Some(receiver) = &self.input_receiver
+                && let Ok((key, pressed)) = receiver.recv() {
+                match pressed {
+                    true => { self.inputs |= 1 << key }
+                    false => { self.inputs &= !(1 << key) }
+                }
 
-                    if pressed == false {
-                        self.variables[x] = key;
-                        break;
-                    }
+                if !pressed {
+                    self.variables[x] = key;
+                    break;
                 }
             }
         }
@@ -442,7 +438,7 @@ impl Emulator {
         let index = self.index as usize;
         self.memory[index..=index + x].clone_from_slice(&self.variables[..=x]);
 
-        if(self.config.memory_operation_behaviour == MemoryOperationBehaviour::MoveIndex) {
+        if self.config.memory_operation_behaviour == MemoryOperationBehaviour::MoveIndex {
             self.index += x as u16 + 1;
         }
     }
@@ -451,7 +447,7 @@ impl Emulator {
         let index = self.index as usize;
         self.variables[..=x].clone_from_slice(&self.memory[index..=index + x]);
 
-        if(self.config.memory_operation_behaviour == MemoryOperationBehaviour::MoveIndex) {
+        if self.config.memory_operation_behaviour == MemoryOperationBehaviour::MoveIndex {
             self.index += x as u16 + 1;
         }
     }
