@@ -107,7 +107,6 @@ impl Emulator {
     fn execute_command(&mut self, command: &u16) {
         let pc = self.program_counter;
         let id = self.index;
-        println!("pc {pc:#06x} | executing {command:#06x} | index {id:#06x}"); // TODO: Replace with proper logic
 
         let (code, x, y, n, nn, nnn) = extract_values(command);
 
@@ -167,6 +166,12 @@ impl Emulator {
 
     fn execute_clear_command(&mut self) {
         self.display = [0; 32];
+
+        if let Some(sender) = &self.display_sender {
+            for i in 0..32 {
+                sender.send((i as u8, self.display[i])).expect("Failed to send display data");
+            }
+        }
     }
 
     fn execute_return_from_subroutine_command(&mut self) {
