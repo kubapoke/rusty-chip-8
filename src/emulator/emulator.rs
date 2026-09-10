@@ -381,15 +381,15 @@ impl Emulator {
     }
 
     fn execute_get_delay_timer_command(&mut self, x: usize) {
-        todo!()
+        self.variables[x] = *self.delay_timer.lock().expect("Unable to lock delay timer");
     }
 
     fn execute_set_delay_timer_command(&mut self, x: usize) {
-        todo!()
+        *self.delay_timer.lock().expect("Unable to lock delay timer") = self.variables[x];
     }
 
     fn execute_set_sound_timer_command(&mut self, x: usize) {
-        todo!()
+        *self.sound_timer.lock().expect("Unable to lock sound timer") = self.variables[x];
     }
 
     fn execute_add_to_index_command(&mut self, x: usize) {
