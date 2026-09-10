@@ -38,5 +38,5 @@ pub fn sound_timer_work(sound_timer: Arc<Mutex<u8>>) {
     }
 }
 
-const MAX_MILLIS_WAIT: u64 = 166;
+const MAX_MILLIS_WAIT: u64 = 16;
 const SOUND_FREQUENCY: f32 = 440.0;
