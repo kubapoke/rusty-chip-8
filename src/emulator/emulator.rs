@@ -404,7 +404,21 @@ impl Emulator {
     }
 
     fn execute_get_key_command(&mut self, x: usize) {
-        todo!()
+        loop {
+            if let Some(receiver) = &self.input_receiver {
+                if let Ok((key, pressed)) = receiver.recv() {
+                    match pressed {
+                        true => { self.inputs |= 1 << key }
+                        false => { self.inputs &= !(1 << key) }
+                    }
+
+                    if pressed == false {
+                        self.variables[x] = key;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     fn execute_get_font_character_command(&mut self, x: usize) {
