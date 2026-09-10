@@ -6,6 +6,8 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Receiver, Sender};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 use rand::prelude::SmallRng;
 use rand::RngExt;
 use crate::emulator::timers::{delay_timer_work, sound_timer_work};
@@ -145,8 +147,13 @@ impl Emulator {
         self.program_counter = INITIAL_PC_LOCATION as u16;
 
         loop {
+            let start = Instant::now();
+
             self.execute_current_command();
             self.process_key_events();
+
+            let end = Instant::now();
+            sleep(Duration::from_micros(MAX_MICROS_WAIT).saturating_sub(end.duration_since(start)));
         }
     }
 
@@ -422,6 +429,7 @@ const MEM_SIZE: usize = 2 << 11;
 const REGISTER_COUNT: usize = 16;
 const INITIAL_PC_LOCATION: usize = 0x200;
 const PROGRAM_COUNTER_MOVE: u16 = 2;
+const MAX_MICROS_WAIT: u64 = 1428;
 const FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
