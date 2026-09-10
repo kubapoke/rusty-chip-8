@@ -66,7 +66,7 @@ impl Emulator {
     }
 
     fn place_font_in_memory(&mut self) {
-        self.memory[0x050..0x0a0].clone_from_slice(&FONT);
+        self.memory[FONT_START..FONT_END].clone_from_slice(&FONT);
     }
 
     fn with_font_in_memory(mut self) -> Self {
@@ -422,7 +422,8 @@ impl Emulator {
     }
 
     fn execute_get_font_character_command(&mut self, x: usize) {
-        todo!()
+        let x = x & 0xf;
+        self.index = (FONT_START + (5 * x)) as u16;
     }
 
     fn execute_binary_coded_decimal_command(&mut self, x: usize) {
@@ -469,6 +470,8 @@ const FONT: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 ];
+const FONT_START: usize = 0x050;
+const FONT_END: usize = 0x0a0;
 
 #[cfg(test)]
 mod test {
