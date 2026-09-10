@@ -1,5 +1,5 @@
 use crate::emulator::calculations::{extract_values, get_code};
-use crate::emulator::config::{EmulatorConfig, OffsetJumpBehaviour, ShiftBehaviour};
+use crate::emulator::config::{AddToIndexBehaviour, EmulatorConfig, OffsetJumpBehaviour, ShiftBehaviour};
 use std::{fs, thread};
 use std::fs::File;
 use std::io::Read;
@@ -393,7 +393,14 @@ impl Emulator {
     }
 
     fn execute_add_to_index_command(&mut self, x: usize) {
-        todo!()
+        let (res, carry) = self.index.overflowing_add(self.variables[x] as u16);
+
+        if self.config.add_to_index_behaviour == AddToIndexBehaviour::Overflow
+        && (carry || (res > 0xfff && self.index <= 0xfff)) {
+            self.variables[0xf] = 0x1;
+        }
+
+        self.index = res;
     }
 
     fn execute_get_key_command(&mut self, x: usize) {
@@ -966,5 +973,41 @@ mod test {
 
         emulator.execute_skip_if_key_not_pressed_command(3);
         assert_eq!(emulator.program_counter, 0x200);
+    }
+
+    #[test]
+    fn test_add_to_index_command() {
+        let mut emulator = Emulator::default();
+        emulator.variables[0x1] = 0xff;
+
+        emulator.config.add_to_index_behaviour = AddToIndexBehaviour::Overflow;
+
+        emulator.index = 0x0;
+        emulator.variables[0xf] = 0x0;
+
+        for i in 1..=16 {
+            emulator.execute_add_to_index_command(0x1);
+            assert_eq!(emulator.index, 0xff * i);
+            assert_eq!(emulator.variables[0xf], 0x0);
+        }
+
+        emulator.execute_add_to_index_command(0x1);
+        assert_eq!(emulator.index, 0x10ef);
+        assert_eq!(emulator.variables[0xf], 0x1);
+
+        emulator.config.add_to_index_behaviour = AddToIndexBehaviour::NoOverflow;
+
+        emulator.index = 0x0;
+        emulator.variables[0xf] = 0x0;
+
+        for i in 1..=16 {
+            emulator.execute_add_to_index_command(0x1);
+            assert_eq!(emulator.index, 0xff * i);
+            assert_eq!(emulator.variables[0xf], 0x0);
+        }
+
+        emulator.execute_add_to_index_command(0x1);
+        assert_eq!(emulator.index, 0x10ef);
+        assert_eq!(emulator.variables[0xf], 0x0);
     }
 }
