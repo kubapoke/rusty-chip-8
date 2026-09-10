@@ -30,7 +30,7 @@ impl App {
         let mut emulator = Emulator::new(Some(display_sender), Some(input_receiver));
 
         let handle = thread::spawn(move || {
-            emulator.load_program(Path::new("./programs/IBM Logo.ch8")); // TODO: Add proper program loading
+            emulator.load_program(Path::new("./programs/test_opcode.ch8")); // TODO: Add proper program loading
             emulator.begin_execution();
         });
 
