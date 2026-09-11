@@ -273,29 +273,33 @@ impl Emulator {
     }
 
     fn execute_subtract_command(&mut self, x: usize, y: usize) {
-        self.variables[0xf] = (self.variables[x] >= self.variables[y]) as u8;
+        let carry = (self.variables[x] >= self.variables[y]) as u8;
         self.variables[x] = self.variables[x].wrapping_sub(self.variables[y]);
+        self.variables[0xf] = carry;
     }
 
     fn execute_replace_and_subtract_command(&mut self, x: usize, y: usize) {
-        self.variables[0xf] = (self.variables[x] <= self.variables[y]) as u8;
+        let carry = (self.variables[x] <= self.variables[y]) as u8;
         self.variables[x] = self.variables[y].wrapping_sub(self.variables[x]);
+        self.variables[0xf] = carry;
     }
 
     fn execute_shift_right_command(&mut self, x: usize, y: usize) {
         if self.config.shift_behaviour == ShiftBehaviour::CopyVY {
             self.variables[x] = self.variables[y];
         }
-        self.variables[0xf] = (self.variables[x] & 0b0000_0001 != 0) as u8;
+        let carry = (self.variables[x] & 0b0000_0001 != 0) as u8;
         self.variables[x] >>= 1;
+        self.variables[0xf] = carry;
     }
 
     fn execute_shift_left_command(&mut self, x: usize, y: usize) {
         if self.config.shift_behaviour == ShiftBehaviour::CopyVY {
             self.variables[x] = self.variables[y];
         }
-        self.variables[0xf] = (self.variables[x] & 0b1000_0000 != 0) as u8;
+        let carry = (self.variables[x] & 0b1000_0000 != 0) as u8;
         self.variables[x] <<= 1;
+        self.variables[0xf] = carry;
     }
 
     fn execute_set_index_command(&mut self, nnn: u16) {
