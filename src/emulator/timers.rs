@@ -1,21 +1,24 @@
-use std::sync::{Arc, Mutex};
+use rodio::source::SineWave;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
-use rodio::source::SineWave;
 
-pub fn delay_timer_work(delay_timer: Arc<Mutex<u8>>) {
+pub fn delay_timer_work(delay_timer: Arc<AtomicU8>) {
     loop {
         let start = Instant::now();
 
-        let mut timer = delay_timer.lock().expect("Unable to lock delay timer");
-        *timer = timer.saturating_sub(1);
+        let current = delay_timer.load(Ordering::Relaxed);
+        let next = current.saturating_sub(1);
+
+        _ = delay_timer.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed);
 
         let end = Instant::now();
         sleep(Duration::from_millis(MAX_MILLIS_WAIT).saturating_sub(end.duration_since(start)));
     }
 }
 
-pub fn sound_timer_work(sound_timer: Arc<Mutex<u8>>) {
+pub fn sound_timer_work(sound_timer: Arc<AtomicU8>) {
     let handle = rodio::DeviceSinkBuilder::open_default_sink().expect("Unable to open audio stream");
     let player = rodio::Player::connect_new(handle.mixer());
     let source = SineWave::new(SOUND_FREQUENCY);
@@ -24,14 +27,15 @@ pub fn sound_timer_work(sound_timer: Arc<Mutex<u8>>) {
     loop {
         let start = Instant::now();
 
-        let mut timer = sound_timer.lock().expect("Unable to lock delay timer");
+        let current = sound_timer.load(Ordering::Relaxed);
+        let next = current.saturating_sub(1);
 
-        match *timer {
-            0 => { player.pause() },
-            _ => { player.play() },
+        _ = sound_timer.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed);
+
+        match current {
+            0 => { player.pause() }
+            _ => { player.play() }
         }
-
-        *timer = timer.saturating_sub(1);
 
         let end = Instant::now();
         sleep(Duration::from_millis(MAX_MILLIS_WAIT).saturating_sub(end.duration_since(start)));

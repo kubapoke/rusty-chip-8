@@ -1,16 +1,17 @@
 use crate::emulator::calculations::{extract_values, get_code};
 use crate::emulator::config::{AddToIndexBehaviour, EmulatorConfig, MemoryOperationBehaviour, OffsetJumpBehaviour, ShiftBehaviour};
-use std::{fs, thread};
+use crate::emulator::timers::{delay_timer_work, sound_timer_work};
+use rand::RngExt;
+use rand::prelude::SmallRng;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
-use rand::prelude::SmallRng;
-use rand::RngExt;
-use crate::emulator::timers::{delay_timer_work, sound_timer_work};
+use std::{fs, thread};
 
 #[derive(Debug)]
 pub struct Emulator {
@@ -19,8 +20,8 @@ pub struct Emulator {
     program_counter: u16,
     index: u16,
     stack: Vec<u16>,
-    delay_timer: Arc<Mutex<u8>>,
-    sound_timer: Arc<Mutex<u8>>,
+    delay_timer: Arc<AtomicU8>,
+    sound_timer: Arc<AtomicU8>,
     variables: [u8; REGISTER_COUNT],
     inputs: u16,
     display_sender: Option<Sender<(u8, u64)>>,
@@ -32,7 +33,7 @@ pub struct Emulator {
 impl Emulator {
     pub fn new(
         display_sender: Option<Sender<(u8, u64)>>,
-        input_receiver: Option<Receiver<(u8, bool)>>
+        input_receiver: Option<Receiver<(u8, bool)>>,
     ) -> Self {
         Self {
             memory: [0; MEM_SIZE],
@@ -40,8 +41,8 @@ impl Emulator {
             program_counter: 0x200,
             index: 0,
             stack: vec![],
-            delay_timer: Arc::new(Mutex::new(0)),
-            sound_timer: Arc::new(Mutex::new(0)),
+            delay_timer: Arc::new(AtomicU8::new(0)),
+            sound_timer: Arc::new(AtomicU8::new(0)),
             variables: [0; REGISTER_COUNT],
             inputs: 0,
             display_sender,
@@ -387,22 +388,22 @@ impl Emulator {
     }
 
     fn execute_get_delay_timer_command(&mut self, x: usize) {
-        self.variables[x] = *self.delay_timer.lock().expect("Unable to lock delay timer");
+        self.variables[x] = self.delay_timer.load(Ordering::Relaxed);
     }
 
     fn execute_set_delay_timer_command(&mut self, x: usize) {
-        *self.delay_timer.lock().expect("Unable to lock delay timer") = self.variables[x];
+        self.delay_timer.store(self.variables[x], Ordering::Relaxed);
     }
 
     fn execute_set_sound_timer_command(&mut self, x: usize) {
-        *self.sound_timer.lock().expect("Unable to lock sound timer") = self.variables[x];
+        self.sound_timer.store(self.variables[x], Ordering::Relaxed);
     }
 
     fn execute_add_to_index_command(&mut self, x: usize) {
         let (res, carry) = self.index.overflowing_add(self.variables[x] as u16);
 
         if self.config.add_to_index_behaviour == AddToIndexBehaviour::Overflow
-        && (carry || (res > 0xfff && self.index <= 0xfff)) {
+            && (carry || (res > 0xfff && self.index <= 0xfff)) {
             self.variables[0xf] = 0x1;
         }
 
