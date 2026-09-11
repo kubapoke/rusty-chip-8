@@ -105,6 +105,10 @@ impl Emulator {
     }
 
     fn execute_command(&mut self, command: &u16) {
+        let pc = self.program_counter;
+        let id = self.index;
+        println!("pc {pc:#06x} | executing {command:#06x} | index {id:#06x}"); // TODO: Replace with proper logic
+
         let (code, x, y, n, nn, nnn) = extract_values(command);
 
         match code {
