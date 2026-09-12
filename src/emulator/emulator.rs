@@ -431,8 +431,8 @@ impl Emulator {
     }
 
     fn execute_get_font_character_command(&mut self, x: usize) {
-        let x = x & 0xf;
-        self.index = (FONT_START + (5 * x)) as u16;
+        let character = self.variables[x] & 0xf;
+        self.index = (FONT_START + (5 * character as usize)) as u16;
     }
 
     fn execute_binary_coded_decimal_command(&mut self, x: usize) {
