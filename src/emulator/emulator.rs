@@ -323,6 +323,7 @@ impl Emulator {
         let vx = self.variables[x] & (DISPLAY_WIDTH - 1) as u8;
         let vy = self.variables[y] & (DISPLAY_HEIGHT - 1) as u8;
         let n = n as usize;
+        self.variables[0xf] = 0;
 
         for (i, idx) in (vy as usize..vy as usize + n).enumerate() {
             if idx >= DISPLAY_HEIGHT as usize {
@@ -334,8 +335,6 @@ impl Emulator {
 
             if self.display[idx] & sprite != 0 {
                 self.variables[0xf] = 1
-            } else {
-                self.variables[0xf] = 0;
             }
 
             self.display[idx] ^= sprite;
