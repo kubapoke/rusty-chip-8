@@ -14,7 +14,6 @@ use winit::window::{Window, WindowAttributes, WindowId};
 
 #[derive(Debug)]
 pub struct App {
-    handle: JoinHandle<()>,
     surface: Option<Surface<OwnedDisplayHandle, Box<dyn Window>>>,
     display: [u64; 32],
     emulator_interface: EmulatorInterface,
@@ -31,7 +30,6 @@ impl App {
         });
 
         Self {
-            handle,
             surface: None,
             display: [0; 32],
             emulator_interface,
