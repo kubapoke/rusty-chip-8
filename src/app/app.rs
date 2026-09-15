@@ -64,6 +64,7 @@ impl ApplicationHandler for App {
         match event {
             WindowEvent::CloseRequested => {
                 info!("Close was requested; stopping");
+                self.emulator_interface.stop_execution();
                 event_loop.exit();
             }
             WindowEvent::SurfaceResized(surface_size) => {
