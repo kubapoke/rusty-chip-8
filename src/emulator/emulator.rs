@@ -65,20 +65,28 @@ impl Emulator {
         self.load_program_into_memory(buffer);
     }
 
-    pub fn get_cancellation_token(&self) -> Arc<AtomicBool> {
+    fn get_cancellation_token(&self) -> Arc<AtomicBool> {
         Arc::clone(&self.cancellation_token)
     }
 
-    pub fn get_display_receiver(&mut self) -> Receiver<(u8, u64)> {
+    fn get_display_receiver(&mut self) -> Receiver<(u8, u64)> {
         let (sender, receiver) = channel::<(u8, u64)>();
         self.display_sender = Some(sender);
         receiver
     }
 
-    pub fn get_input_sender(&mut self) -> Sender<(u8, bool)> {
+    fn get_input_sender(&mut self) -> Sender<(u8, bool)> {
         let (sender, receiver) = channel::<(u8, bool)>();
         self.input_receiver = Some(receiver);
         sender
+    }
+    
+    pub fn get_interface(&mut self) -> EmulatorInterface {
+        EmulatorInterface::new(
+            self.get_display_receiver(),
+            self.get_input_sender(),
+            self.get_cancellation_token(),
+        )
     }
 
     fn place_font_in_memory(&mut self) {
@@ -477,6 +485,43 @@ impl Emulator {
 impl Default for Emulator {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[derive(Debug)]
+pub struct EmulatorInterface {
+    display_receiver: Receiver<(u8, u64)>,
+    input_sender: Sender<(u8, bool)>,
+    cancellation_token: Arc<AtomicBool>,
+}
+
+impl EmulatorInterface {
+    fn new(
+        display_receiver: Receiver<(u8, u64)>,
+        input_sender: Sender<(u8, bool)>,
+        cancellation_token: Arc<AtomicBool>,
+    ) -> Self {
+        Self {
+            display_receiver,
+            input_sender,
+            cancellation_token,
+        }
+    }
+    
+    pub fn receive_display_update(&self) -> Option<(u8, u64)> {
+        if let Ok((row, value)) = self.display_receiver.try_recv() {
+            return Some((row, value));
+        }
+        
+        None
+    }
+    
+    pub fn send_input_update(&self, key: u8, pressed: bool) {
+        self.input_sender.send((key, pressed)).expect("Failed to send input data.");
+    }
+    
+    pub fn stop_execution(&self) {
+        self.cancellation_token.store(true, Ordering::Relaxed);
     }
 }
 

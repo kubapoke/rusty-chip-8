@@ -4,4 +4,4 @@ mod config;
 pub mod timers;
 pub mod error;
 
-pub use emulator::Emulator;
+pub use emulator::{Emulator, EmulatorInterface};

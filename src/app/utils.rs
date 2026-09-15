@@ -7,6 +7,7 @@ use winit::event::{ElementState, KeyEvent};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use winit::window::Window;
+use crate::emulator::EmulatorInterface;
 
 pub fn resize(
     surface: &mut Surface<impl HasDisplayHandle, impl HasWindowHandle>,
@@ -52,8 +53,8 @@ fn determine_pixel_color(
     }
 }
 
-pub fn update_display_from_feed(display: &mut [u64; 32], feed: &Receiver<(u8, u64)>) {
-    while let Ok((row, value)) = feed.try_recv() {
+pub fn update_display_from_interface(display: &mut [u64; 32], interface: &EmulatorInterface) {
+    while let Some((row, value)) = interface.receive_display_update() {
         display[row as usize] = value;
     }
 }

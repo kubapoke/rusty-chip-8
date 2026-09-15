@@ -1,11 +1,9 @@
-use crate::app::utils::{fill_from_display, get_key_event_message, resize, update_display_from_feed};
-use crate::emulator::Emulator;
+use crate::app::utils::{fill_from_display, get_key_event_message, resize, update_display_from_interface};
+use crate::emulator::{Emulator, EmulatorInterface};
 use log::info;
 use softbuffer::{Context, Surface};
 use std::path::Path;
-use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::thread::JoinHandle;
 use winit::application::ApplicationHandler;
@@ -19,17 +17,13 @@ pub struct App {
     handle: JoinHandle<()>,
     surface: Option<Surface<OwnedDisplayHandle, Box<dyn Window>>>,
     display: [u64; 32],
-    display_receiver: Receiver<(u8, u64)>,
-    input_sender: Sender<(u8, bool)>,
-    cancellation_token: Arc<AtomicBool>,
+    emulator_interface: EmulatorInterface,
 }
 
 impl App {
     pub fn new() -> Self {
         let mut emulator = Emulator::new();
-        let display_receiver = emulator.get_display_receiver();
-        let input_sender = emulator.get_input_sender();
-        let cancellation_token = emulator.get_cancellation_token();
+        let emulator_interface = emulator.get_interface();
 
         let handle = thread::spawn(move || {
             emulator.load_program(Path::new("./programs/test_opcode.ch8")); // TODO: Add proper program loading
@@ -40,9 +34,7 @@ impl App {
             handle,
             surface: None,
             display: [0; 32],
-            display_receiver,
-            input_sender,
-            cancellation_token,
+            emulator_interface,
         }
     }
 }
@@ -81,14 +73,14 @@ impl ApplicationHandler for App {
             }
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_mut().expect("Failed to get the softbuffer buffer");
-                update_display_from_feed(&mut self.display, &self.display_receiver);
+                update_display_from_interface(&mut self.display, &self.emulator_interface);
                 fill_from_display(surface, &self.display);
 
                 surface.window().request_redraw();
             }
             WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => {
-                if let Some(msg) = get_key_event_message(event) {
-                    self.input_sender.send(msg).expect("Failed to send input data");
+                if let Some((key, pressed)) = get_key_event_message(event) {
+                    self.emulator_interface.send_input_update(key, pressed);
                 }
             }
             _ => ()
