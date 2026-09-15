@@ -26,10 +26,9 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let (display_sender, display_receiver) = channel::<(u8, u64)>();
-        let (input_sender, input_receiver) = channel::<(u8, bool)>();
-
-        let mut emulator = Emulator::new(Some(display_sender), Some(input_receiver));
+        let mut emulator = Emulator::new();
+        let display_receiver = emulator.get_display_receiver();
+        let input_sender = emulator.get_input_sender();
         let cancellation_token = emulator.get_cancellation_token();
 
         let handle = thread::spawn(move || {

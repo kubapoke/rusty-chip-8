@@ -8,7 +8,7 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use std::{fs, thread};
@@ -32,10 +32,7 @@ pub struct Emulator {
 }
 
 impl Emulator {
-    pub fn new(
-        display_sender: Option<Sender<(u8, u64)>>,
-        input_receiver: Option<Receiver<(u8, bool)>>,
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
             memory: [0; MEM_SIZE],
             display: [0; 32],
@@ -46,8 +43,8 @@ impl Emulator {
             sound_timer: Arc::new(AtomicU8::new(0)),
             variables: [0; REGISTER_COUNT],
             inputs: 0,
-            display_sender,
-            input_receiver,
+            display_sender: None,
+            input_receiver: None,
             rng: rand::make_rng(),
             config: EmulatorConfig::default(),
             cancellation_token: Arc::new(AtomicBool::new(false)),
@@ -70,6 +67,18 @@ impl Emulator {
 
     pub fn get_cancellation_token(&self) -> Arc<AtomicBool> {
         Arc::clone(&self.cancellation_token)
+    }
+
+    pub fn get_display_receiver(&mut self) -> Receiver<(u8, u64)> {
+        let (sender, receiver) = channel::<(u8, u64)>();
+        self.display_sender = Some(sender);
+        receiver
+    }
+
+    pub fn get_input_sender(&mut self) -> Sender<(u8, bool)> {
+        let (sender, receiver) = channel::<(u8, bool)>();
+        self.input_receiver = Some(receiver);
+        sender
     }
 
     fn place_font_in_memory(&mut self) {
@@ -467,7 +476,7 @@ impl Emulator {
 
 impl Default for Emulator {
     fn default() -> Self {
-        Self::new(None, None)
+        Self::new()
     }
 }
 
