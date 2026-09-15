@@ -1,11 +1,11 @@
 use rodio::source::SineWave;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-pub fn delay_timer_work(delay_timer: Arc<AtomicU8>) {
-    loop {
+pub fn delay_timer_work(delay_timer: Arc<AtomicU8>, cancellation_token: Arc<AtomicBool>) {
+    while !cancellation_token.load(Ordering::Relaxed) {
         let start = Instant::now();
 
         let current = delay_timer.load(Ordering::Relaxed);
@@ -18,13 +18,13 @@ pub fn delay_timer_work(delay_timer: Arc<AtomicU8>) {
     }
 }
 
-pub fn sound_timer_work(sound_timer: Arc<AtomicU8>) {
+pub fn sound_timer_work(sound_timer: Arc<AtomicU8>, cancellation_token: Arc<AtomicBool>) {
     let handle = rodio::DeviceSinkBuilder::open_default_sink().expect("Unable to open audio stream");
     let player = rodio::Player::connect_new(handle.mixer());
     let source = SineWave::new(SOUND_FREQUENCY);
     player.append(source);
 
-    loop {
+    while !cancellation_token.load(Ordering::Relaxed) {
         let start = Instant::now();
 
         let current = sound_timer.load(Ordering::Relaxed);

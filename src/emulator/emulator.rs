@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -28,6 +28,7 @@ pub struct Emulator {
     input_receiver: Option<Receiver<(u8, bool)>>,
     rng: SmallRng,
     config: EmulatorConfig,
+    cancellation_token: Arc<AtomicBool>,
 }
 
 impl Emulator {
@@ -49,6 +50,7 @@ impl Emulator {
             input_receiver,
             rng: rand::make_rng(),
             config: EmulatorConfig::default(),
+            cancellation_token: Arc::new(AtomicBool::new(false)),
         }
             .with_font_in_memory()
             .with_timers_initialized()
@@ -66,6 +68,10 @@ impl Emulator {
         self.load_program_into_memory(buffer);
     }
 
+    pub fn get_cancellation_token(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.cancellation_token)
+    }
+
     fn place_font_in_memory(&mut self) {
         self.memory[FONT_START..FONT_END].clone_from_slice(&FONT);
     }
@@ -77,13 +83,15 @@ impl Emulator {
 
     fn initialize_timers(&mut self) {
         let timer = Arc::clone(&self.delay_timer);
+        let token = Arc::clone(&self.cancellation_token);
         _ = thread::spawn(|| {
-            delay_timer_work(timer);
+            delay_timer_work(timer, token);
         });
 
         let timer = Arc::clone(&self.sound_timer);
+        let token = Arc::clone(&self.cancellation_token);
         _ = thread::spawn(|| {
-            sound_timer_work(timer);
+            sound_timer_work(timer, token);
         });
     }
 
@@ -144,7 +152,7 @@ impl Emulator {
     pub fn begin_execution(&mut self) {
         self.program_counter = INITIAL_PC_LOCATION as u16;
 
-        loop {
+        while !self.cancellation_token.load(Ordering::Relaxed) {
             let start = Instant::now();
 
             self.execute_current_command();
