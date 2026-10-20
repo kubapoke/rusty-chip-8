@@ -1,7 +1,6 @@
 use super::app::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
 use softbuffer::Surface;
 use std::num::NonZeroU32;
-use std::sync::mpsc::Receiver;
 use winit::dpi;
 use winit::event::{ElementState, KeyEvent};
 use winit::keyboard::{KeyCode, PhysicalKey};
