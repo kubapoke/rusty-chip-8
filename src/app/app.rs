@@ -1,4 +1,6 @@
-use crate::app::utils::{fill_from_display, get_key_event_message, resize, update_display_from_interface};
+use crate::app::utils::{
+    fill_from_display, get_key_event_message, resize, update_display_from_interface,
+};
 use crate::emulator::{Emulator, EmulatorInterface};
 use log::info;
 use softbuffer::{Context, Surface};
@@ -44,10 +46,15 @@ impl Default for App {
 impl ApplicationHandler for App {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         let window_attributes = WindowAttributes::default()
-            .with_surface_size(LogicalSize::new(DISPLAY_WIDTH * SIZE_MULTIPLIER, DISPLAY_HEIGHT * SIZE_MULTIPLIER))
+            .with_surface_size(LogicalSize::new(
+                DISPLAY_WIDTH * SIZE_MULTIPLIER,
+                DISPLAY_HEIGHT * SIZE_MULTIPLIER,
+            ))
             .with_resizable(false)
             .with_title("CHIP-8");
-        let window = event_loop.create_window(window_attributes).expect("Failed creating window");
+        let window = event_loop
+            .create_window(window_attributes)
+            .expect("Failed creating window");
 
         let context =
             Context::new(event_loop.owned_display_handle()).expect("Failed creating context");
@@ -55,7 +62,12 @@ impl ApplicationHandler for App {
         self.surface = Some(surface);
     }
 
-    fn window_event(&mut self, event_loop: &dyn ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
+    fn window_event(
+        &mut self,
+        event_loop: &dyn ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
         info!("{event:?}");
         match event {
             WindowEvent::CloseRequested => {
@@ -64,23 +76,33 @@ impl ApplicationHandler for App {
                 event_loop.exit();
             }
             WindowEvent::SurfaceResized(surface_size) => {
-                let surface = self.surface.as_mut().expect("Resize event without a surface");
+                let surface = self
+                    .surface
+                    .as_mut()
+                    .expect("Resize event without a surface");
                 resize(surface, surface_size);
                 surface.window().request_redraw();
             }
             WindowEvent::RedrawRequested => {
-                let surface = self.surface.as_mut().expect("Failed to get the softbuffer buffer");
+                let surface = self
+                    .surface
+                    .as_mut()
+                    .expect("Failed to get the softbuffer buffer");
                 update_display_from_interface(&mut self.display, &self.emulator_interface);
                 fill_from_display(surface, &self.display);
 
                 surface.window().request_redraw();
             }
-            WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => {
+            WindowEvent::KeyboardInput {
+                device_id: _,
+                event,
+                is_synthetic: _,
+            } => {
                 if let Some((key, pressed)) = get_key_event_message(event) {
                     self.emulator_interface.send_input_update(key, pressed);
                 }
             }
-            _ => ()
+            _ => (),
         }
     }
 }

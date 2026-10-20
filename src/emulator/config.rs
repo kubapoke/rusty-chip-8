@@ -11,13 +11,13 @@ impl EmulatorConfig {
         shift_behaviour: ShiftBehaviour,
         offset_jump_behaviour: OffsetJumpBehaviour,
         add_to_index_behaviour: AddToIndexBehaviour,
-        memory_operation_behaviour: MemoryOperationBehaviour
+        memory_operation_behaviour: MemoryOperationBehaviour,
     ) -> Self {
         Self {
             shift_behaviour,
             offset_jump_behaviour,
             add_to_index_behaviour,
-            memory_operation_behaviour
+            memory_operation_behaviour,
         }
     }
 }
@@ -28,7 +28,7 @@ impl Default for EmulatorConfig {
             ShiftBehaviour::CopyVY,
             OffsetJumpBehaviour::AddV0,
             AddToIndexBehaviour::Overflow,
-            MemoryOperationBehaviour::DontMoveIndex
+            MemoryOperationBehaviour::DontMoveIndex,
         )
     }
 }

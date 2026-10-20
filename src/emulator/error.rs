@@ -9,7 +9,7 @@ pub enum EmulatorError {
 impl Display for EmulatorError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            EmulatorError::InvalidCommand(c) => write!(f, "Invalid command: {:#06x}", c)
+            EmulatorError::InvalidCommand(c) => write!(f, "Invalid command: {:#06x}", c),
         }
     }
 }

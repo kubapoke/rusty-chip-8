@@ -19,7 +19,8 @@ pub fn delay_timer_work(delay_timer: Arc<AtomicU8>, cancellation_token: Arc<Atom
 }
 
 pub fn sound_timer_work(sound_timer: Arc<AtomicU8>, cancellation_token: Arc<AtomicBool>) {
-    let handle = rodio::DeviceSinkBuilder::open_default_sink().expect("Unable to open audio stream");
+    let handle =
+        rodio::DeviceSinkBuilder::open_default_sink().expect("Unable to open audio stream");
     let player = rodio::Player::connect_new(handle.mixer());
     let source = SineWave::new(SOUND_FREQUENCY);
     player.append(source);
@@ -33,8 +34,8 @@ pub fn sound_timer_work(sound_timer: Arc<AtomicU8>, cancellation_token: Arc<Atom
         _ = sound_timer.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed);
 
         match current {
-            0 => { player.pause() }
-            _ => { player.play() }
+            0 => player.pause(),
+            _ => player.play(),
         }
 
         let end = Instant::now();

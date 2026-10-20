@@ -1,4 +1,5 @@
 use super::app::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
+use crate::emulator::EmulatorInterface;
 use softbuffer::Surface;
 use std::num::NonZeroU32;
 use winit::dpi;
@@ -6,19 +7,21 @@ use winit::event::{ElementState, KeyEvent};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use winit::window::Window;
-use crate::emulator::EmulatorInterface;
 
 pub fn resize(
     surface: &mut Surface<impl HasDisplayHandle, impl HasWindowHandle>,
     surface_size: dpi::PhysicalSize<u32>,
 ) {
-    let (Some(width), Some(height)) =
-        (NonZeroU32::new(surface_size.width), NonZeroU32::new(surface_size.height))
-    else {
+    let (Some(width), Some(height)) = (
+        NonZeroU32::new(surface_size.width),
+        NonZeroU32::new(surface_size.height),
+    ) else {
         return;
     };
 
-    surface.resize(width, height).expect("Failed to resize the softbuffer surface")
+    surface
+        .resize(width, height)
+        .expect("Failed to resize the softbuffer surface")
 }
 
 pub fn fill(
@@ -28,9 +31,13 @@ pub fn fill(
     let surface_size = surface.window().as_ref().surface_size();
     resize(surface, surface_size);
 
-    let mut buffer = surface.buffer_mut().expect("Failed to get the softbuffer buffer");
+    let mut buffer = surface
+        .buffer_mut()
+        .expect("Failed to get the softbuffer buffer");
     buffer.fill(color);
-    buffer.present().expect("Failed to present the softbuffer buffer");
+    buffer
+        .present()
+        .expect("Failed to present the softbuffer buffer");
 }
 
 fn map_coordinates(
@@ -43,9 +50,7 @@ fn map_coordinates(
     (source_x, source_y)
 }
 
-fn determine_pixel_color(
-    value: u64
-) -> u32 {
+fn determine_pixel_color(value: u64) -> u32 {
     match value {
         0 => ARRAY_FALSE_COLOR,
         _ => ARRAY_TRUE_COLOR,
@@ -65,7 +70,9 @@ pub fn fill_from_display(
     let surface_size = surface.window().as_ref().surface_size();
     resize(surface, surface_size);
 
-    let mut buffer = surface.buffer_mut().expect("Failed to get the softbuffer buffer");
+    let mut buffer = surface
+        .buffer_mut()
+        .expect("Failed to get the softbuffer buffer");
     let buffer_dims = (buffer.width().get(), buffer.height().get());
     let display_dims = DISPLAY_DIMS;
 
@@ -73,15 +80,22 @@ pub fn fill_from_display(
         let i = i as u32;
         let buffer_coords = (i % buffer_dims.0, i / buffer_dims.0);
         let coords = map_coordinates(display_dims, buffer_dims, buffer_coords);
-        *pixel = determine_pixel_color(*display.get(coords.1 as usize).expect("Failed to get display value") & (1 << ((DISPLAY_WIDTH as u64 - 1) - coords.0 as u64)));
+        *pixel = determine_pixel_color(
+            *display
+                .get(coords.1 as usize)
+                .expect("Failed to get display value")
+                & (1 << ((DISPLAY_WIDTH as u64 - 1) - coords.0 as u64)),
+        );
     }
 
-    buffer.present().expect("Failed to present the softbuffer buffer");
+    buffer
+        .present()
+        .expect("Failed to present the softbuffer buffer");
 }
 
 pub fn get_key_event_message(event: KeyEvent) -> Option<(u8, bool)> {
     if event.repeat {
-        return None
+        return None;
     }
 
     let is_pressed = match event.state {
@@ -106,7 +120,7 @@ pub fn get_key_event_message(event: KeyEvent) -> Option<(u8, bool)> {
         PhysicalKey::Code(KeyCode::KeyX) => 0x0,
         PhysicalKey::Code(KeyCode::KeyC) => 0xb,
         PhysicalKey::Code(KeyCode::KeyV) => 0xf,
-        _ => { return None },
+        _ => return None,
     };
 
     Some((key, is_pressed))

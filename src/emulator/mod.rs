@@ -1,7 +1,7 @@
-mod emulator;
 mod calculations;
 mod config;
-pub mod timers;
+mod emulator;
 pub mod error;
+pub mod timers;
 
 pub use emulator::{Emulator, EmulatorInterface};
